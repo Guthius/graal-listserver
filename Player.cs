@@ -1,244 +1,264 @@
-using System;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
-using System.Collections;
-using System.Threading;
-using System.Text;
 using ICSharpCode.SharpZipLib.Zip.Compression;
 using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
-using Listserver.Databases;
+using System;
+using System.IO;
+using System.Net.Sockets;
+using System.Text;
 
 namespace Listserver
 {
     public class Player
     {
-        public string Username;
-        public Socket Sock;
-        private string Outgoing = "";
+        const int MSG_SERVERLIST = 0;
+        const int MSG_MOTD = 2;
+        const int MSG_SHOWMORE = 3;
+        const int MSG_DISCONNECT = 4;
+        const int MSG_PAYBYCREDITCARD = 5;
+        const int MSG_PAYBYPHONE = 6;
+
+        string outgoingData = "";
+        readonly byte[] receiveBuffer = new byte[4096];
+        readonly byte[] inflateBuffer = new byte[204800];
+
+        /// <summary>
+        /// Gets or sets the underlying socket of the player.
+        /// </summary>
+        public Socket Socket { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the ID of the player.
+        /// </summary>
+        public string ID { get; private set; } = string.Empty;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Player"/> class.
+        /// </summary>
+        /// <param name="socket"></param>
+        public Player(Socket socket)
+        {
+            ID = socket.RemoteEndPoint.ToString();
+
+            Socket = socket;
+            Socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, OnDataReceived, null);
+        }
 
         /// <summary>
         /// Compress data so it can be send to the client.
         /// </summary>
-        /// <param name="Data">Data to compress.</param>
+        /// <param name="data">Data to compress.</param>
         /// <returns>Array containg the uncompressed bytes.</returns>
-        public byte[] Compress(string Data)
+        public byte[] Compress(string data)
         {
-            /* Compress data that has to be send. */
-            MemoryStream MemStream = new MemoryStream();
-            DeflaterOutputStream DefStream = new DeflaterOutputStream(MemStream, new Deflater(Deflater.BEST_COMPRESSION, false));
-            byte[] Buffer = Encoding.ASCII.GetBytes(Data);
-            DefStream.Write(Buffer, 0, Buffer.Length);
-            DefStream.Finish();
-            DefStream.Close();
-            return MemStream.ToArray();
-        }
-
-        /// <summary>
-        /// Sends all data that is waiting to be send, and clears the
-        /// outgoing messages.
-        /// </summary>
-        public void SendOutgoing()
-        {
-            if (Outgoing != String.Empty)
+            using (var memoryStream = new MemoryStream())
             {
-                Send(Outgoing);
+                using (var deflaterStream = new DeflaterOutputStream(memoryStream, new Deflater(Deflater.BEST_COMPRESSION, false)))
+                {
+                    byte[] buffer = Encoding.ASCII.GetBytes(data);
 
-                Outgoing = String.Empty;
+                    deflaterStream.Write(buffer, 0, buffer.Length);
+                    deflaterStream.Finish();
+                }
+
+                return memoryStream.ToArray();
             }
         }
 
         /// <summary>
-        /// Directly sends the specified data to the player.
+        /// Sends all data that is waiting to be send, and clears the outgoing messages.
         /// </summary>
-        /// <param name="Data">The complete package to send.</param>
-        public void Send(string Data)
+        public void Flush()
         {
-            byte[] bData = Compress(Data);
-            byte[] bPacket = new byte[bData.Length + 2];
+            if (outgoingData != string.Empty)
+            {
+                Send(outgoingData);
+
+                outgoingData = string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Sends the specified data directly to the player.
+        /// </summary>
+        /// <param name="data">The packet to send.</param>
+        void Send(string data)
+        {
+            var packetData = Compress(data);
+            var packet = new byte[packetData.Length + 2];
 
             // Set the size of this packet.
-            bPacket[0] = (byte)((bData.Length >> 8) & 0xFF);
-            bPacket[1] = (byte)(bData.Length & 0xFF);
+            packet[0] = (byte)((packetData.Length >> 8) & 0xFF);
+            packet[1] = (byte)(packetData.Length & 0xFF);
 
             // Move the data of the bData to the bPacket array right behind the packet size.
-            for (int i = 0; i < bData.Length; i++) bPacket[i + 2] = bData[i];
+            for (int i = 0; i < packetData.Length; i++) packet[i + 2] = packetData[i];
 
             // Send the data to the client.
             try
             {
-                Sock.Send(bPacket);
-                Log.Write(LogLevel.Debug, "Server", "Send data to {0} ({1} bytes)", Sock.RemoteEndPoint, bPacket.Length);
+                Socket.Send(packet);
+                Log.Write(LogLevel.Debug, "Player", "Send data to {0} ({1} bytes)", ID, packet.Length);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log.Write(LogLevel.Error, "Server", e.Message);
-                Log.Write(LogLevel.Error, "Server", e.StackTrace);
-                Log.Write(LogLevel.Error, "Server", "Failed to send data to {0} ({1} bytes)", Sock.RemoteEndPoint, bPacket.Length);
+                Log.Write(LogLevel.Error, "Player", "Failed to send data to {0} ({1} bytes)", ID, packet.Length);
+                Log.Write(LogLevel.Error, "Player", ex.Message + "\n" + ex.StackTrace);
             }
         }
 
         /// <summary>
-        /// Creates a properly formatted package and adds it to
-        /// the outgoing messages.
+        /// Creates a properly formatted packet and adds it to the outgoing messages.
         /// </summary>
-        /// <param name="Type">The type of this package.</param>
-        /// <param name="Data">The actual data of the package.</param>
-        public void Send(int Type, string Data)
-        {
-            /* Generate the message to send. */
-            string sMessage = Convert.ToString((char)(Type + 32)) + Data + Convert.ToString((char)10);
-            Outgoing += sMessage;
-        }
+        /// <param name="type">The type of this packet.</param>
+        /// <param name="data">The actual data of the packet.</param>
+        void Send(int type, string data) => outgoingData += Convert.ToString((char)(type + 32)) + data + Convert.ToString((char)10);
 
         /// <summary>
-        /// Disconnects the players from the server.
+        /// Disconnects the player from the server.
         /// </summary>
-        /// <param name="Message">The message that is shown to the player.</param>
-        private void Disconnect(string Message)
+        /// <param name="message">The message that is shown to the player.</param>
+        void Disconnect(string message)
         {
-            string sMessage = Convert.ToString((char)(36)) + Message + Convert.ToString((char)10);
-            Send(sMessage);
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                Send(Convert.ToString((char)(32 + MSG_DISCONNECT)) + message + Convert.ToString((char)10));
+            }
 
-            //Send(4, Message);
-            Sock.Close();
+            Socket.Close();
         }
 
         /// <summary>
         /// Changes the message shown in the bottom center area of the client.
         /// </summary>
-        /// <param name="Message">The message to display in the bottom.</param>
-        public void ShowMessage(string Message)
-        {
-            Send(2, Message);
-        }
+        /// <param name="message">The message to display in the bottom.</param>
+        public void ShowMessage(string message) => Send(MSG_MOTD, message);
 
         /// <summary>
         /// Sends the serverlist the the player.
         /// </summary>
-        public void SendServerList()
-        {
-            Send(0, Program.DB.GetServers());
-        }
+        public void SendServerList() => Send(MSG_SERVERLIST, Program.Database.GetServers());
 
         /// <summary>
-        /// Makes the 'Show More' button visible on the client, which
-        /// will lead them to the specified URL when clicked.
+        /// Makes the 'Show More' button visible on the client, which will lead them to the specified URL when clicked.
         /// </summary>
-        /// <param name="URL">The URL the button should lead to.</param>
-        public void EnableShowMore(string URL)
-        {
-            Send(3, URL);
-        }
+        /// <param name="url">The URL the button should lead to.</param>
+        public void EnableShowMore(string url) => Send(MSG_SHOWMORE, url);
 
         /// <summary>
-        /// Makes the 'Pay by Credit Card' button visible on the client, which
-        /// will lead them to the specified URL when clicked.
+        /// Makes the 'Pay by Credit Card' button visible on the client, which will lead them to the specified URL when clicked.
         /// </summary>
-        /// <param name="URL">The URL the button should lead to.</param>
-        public void EnablePayByCreditCard(string URL)
-        {
-            Send(5, URL);
-        }
+        /// <param name="url">The URL the button should lead to.</param>
+        public void EnablePayByCreditCard(string url) => Send(MSG_PAYBYCREDITCARD, url);
 
         /// <summary>
-        /// Makes the 'Pay by Phone' button visible on the client, which
-        /// will lead them to the specified URL when clicked.
+        /// Makes the 'Pay by Phone' button visible on the client.
         /// </summary>
-        public void EnablePayByPhone()
-        {
-            Send(6, "1");
-        }
+        public void EnablePayByPhone() => Send(MSG_PAYBYPHONE, "1");
 
         /// <summary>
-        /// Handles any received packages.
+        /// Called whenever data is received from the player.
         /// </summary>
-        /// <param name="Type">Type of package.</param>
-        /// <param name="Data">Data of the package.</param>
-        public void Handle(int Type, string Data)
+        /// <param name="asyncResult"></param>
+        void OnDataReceived(IAsyncResult asyncResult)
         {
-            int iOffset = 0;
-            int iSize = 0;
-            string sURL;
-            string sWelcome = "";
-
-            switch (Type)
+            var bytesReceived = Socket.EndReceive(asyncResult);
+            if (bytesReceived > 0)
             {
-                case 0: /* IDENTIFICATION */
-                    if (Data != "newmain")
+                int packetSize = (receiveBuffer[0] >> 8) + receiveBuffer[1];
+
+                Log.Write(LogLevel.Debug, "Player", "Received data from {0} ({1} bytes)", ID, packetSize + 2);
+
+                if (bytesReceived >= (packetSize + 2))
+                {
+                    var inflater = new Inflater();
+                    inflater.SetInput(receiveBuffer, 2, packetSize);
+                    inflater.Inflate(inflateBuffer, 0, 204800);
+
+                    // Split the received data into packages, and handle them.
+                    string[] messages = Encoding.UTF8.GetString(inflateBuffer, 0, (int)inflater.TotalOut).Split((char)10);
+                    for (int j = 0; j < messages.Length; j++)
+                    {
+                        if (messages[j] != string.Empty)
+                        {
+                            Handle(messages[j][0] - 32, messages[j].Substring(1));
+                        }
+                    }
+                }
+
+                Socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, OnDataReceived, null);
+            }
+            else
+            {
+                Log.Write(LogLevel.Info, "Player", "{0} has disconnected", ID);
+
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Handles messages received from the client.
+        /// </summary>
+        /// <param name="messageType">Type of package.</param>
+        /// <param name="messageData">Data of the package.</param>
+        public void Handle(int messageType, string messageData)
+        {
+            switch (messageType)
+            {
+                /* IDENTIFICATION */
+                case 0:
+                    if (messageData != "newmain")
                     {
                         Disconnect("You are using a unsupported client.");
                     }
-                break;
+                    break;
 
-                case 1: /* LOGIN */
+                /* LOGIN */
+                case 1:
 
-                    /* Extract the username and password. */
-                    iSize = (int)Data[iOffset] - 32;
-                    string sUsername = Data.Substring(iOffset + 1, iSize);
-                    iOffset += (iSize + 1);
-                    iSize = (int)Data[iOffset] - 32;
-                    string sPassword = Data.Substring(iOffset + 1, iSize);
+                    // Extract the account name and password.
+                    int offset = 0;
+                    int len = messageData[offset] - 32;
+                    var accountName = messageData.Substring(offset + 1, len);
+                    offset += len + 1;
+                    len = messageData[offset] - 32;
+                    var password = messageData.Substring(offset + 1, len);
 
-                    /* Check if the username and password are valid. */
-                    if (Program.DB.AccountExists(sUsername, sPassword) || Program.DisableLogin)
+                    // Check if the username and password are valid.
+                    if (Program.LoginDisabled || Program.Database.AccountExists(accountName, password))
                     {
-                        /* Login success. */
-                        if (!Program.DisableLogin)
-                            Log.Write(LogLevel.Success, "Server", "{0} has logged in as {1}.", Sock.RemoteEndPoint, sUsername);
+                        // Login success.
+                        if (!Program.LoginDisabled)
+                            Log.Write(LogLevel.Info, "Player", "{0} has logged in as {1}", ID, accountName);
 
-                        /* Check if the message in the bottom of the client should
-                         * be shown or not, and get the message which should be shown. */
-                        if (Program.Config.Contains("welcome"))
+                        // Append the account name to the player ID.
+                        ID = ID + " (" + accountName + ")";
+
+                        // Check if the message in the bottom of the client should be shown or not, and get the message which should be shown.
+                        var motd = Program.Configuration.Get("motd", "").Trim();
+                        if (motd.Length > 0)
                         {
-                            sWelcome = Program.Config["welcome"];
-                            if (sWelcome == String.Empty)
-                            {
-                                sWelcome = "Listserver 2.1.5 Emulator By Seipheroth";
-                            }
-                        }
-                        if (Program.Config.Contains("hidewelcome"))
-                        {
-                            if (!Program.Config.GetBool("hidewelcome"))
-                            {
-                                ShowMessage(sWelcome);
-                            }
-                        }
-                        else
-                        {
-                            ShowMessage(sWelcome);
+                            ShowMessage(motd);
                         }
 
-                        /* Check if the 'Pay by Credit Card' button should be shown. */
-                        if (Program.Config.Contains("paybycreditcard"))
+                        // Check if the 'Pay by Credit Card' button should be shown.
+                        if (Program.Configuration.GetBool("paybycreditcard", false))
                         {
-                            if (Program.Config.GetBool("paybycreditcard"))
+                            var url = Program.Configuration.Get("paybycreditcard_url", "").Trim();
+                            if (url.Length > 0)
                             {
-                                sURL = Program.Config["paybycreditcard_url"];
-                                if (sURL == String.Empty) sURL = "localhost/";
-
-                                EnablePayByCreditCard(sURL);
+                                EnablePayByCreditCard(url);
                             }
                         }
 
-                        /* Check if the 'Pay by Phone' button should be shown. */
-                        if (Program.Config.Contains("paybyphone"))
-                        {
-                            if (Program.Config.GetBool("paybyphone"))
-                            {
-                                EnablePayByPhone();
-                            }
-                        }
+                        // Check if the 'Pay by Phone' button should be shown.
+                        if (Program.Configuration.GetBool("paybyphone", false)) EnablePayByPhone();
 
-                        /* Check if the 'Show More' button should be shown. */
-                        if (Program.Config.Contains("showmore"))
+                        // Check if the 'Show More' button should be shown.
+                        if (Program.Configuration.GetBool("showmore", false))
                         {
-                            if (Program.Config.GetBool("showmore"))
+                            var url = Program.Configuration.Get("showmore_url", "").Trim();
+                            if (url.Length > 0)
                             {
-                                sURL = Program.Config["showmore_url"];
-                                if (sURL == String.Empty) sURL = "www.gamemagi.com/gserver";
-
-                                EnableShowMore(sURL);
+                                EnableShowMore(url);
                             }
                         }
 
@@ -246,12 +266,13 @@ namespace Listserver
                     }
                     else
                     {
-                        /* Login failed. */
-                        Log.Write(LogLevel.Error, "Server", "Login failed for {0}.", Sock.RemoteEndPoint);
+                        Log.Write(LogLevel.Error, "Player", "Login failed for {0}", ID);
                         Disconnect("Invalid username or password.");
                     }
-                break;
+                    break;
             }
+
+            Flush();
         }
     }
 }

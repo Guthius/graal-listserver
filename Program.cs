@@ -1,89 +1,72 @@
 using System;
-using System.Text;
-using System.Net;
-using System.Net.Sockets;
-using System.Collections;
-using Listserver.Databases;
 
 namespace Listserver
 {
     class Program
     {
-        public static Database DB;
-        public static Config   Config;
-        public static string   ServerList;
-        public static string   StartupPath;
-        public static bool     DisableLogin = false;
+        /// <summary>
+        /// Gets or sets a value indicating whether logging in has been disabled.
+        /// When disabled, login details are not authenticated and anyone can connect.
+        /// </summary>
+        public static bool LoginDisabled { get; set; } = false;
 
-        static void Main(string[] args)
+        /// <summary>
+        /// Gets the accounts database.
+        /// </summary>
+        public static IDatabase Database { get; private set; }
+
+        /// <summary>
+        /// Gets the server configuration.
+        /// </summary>
+        public static Config Configuration { get; private set; }
+
+        /// <summary>
+        /// Main entry point of the application.
+        /// </summary>
+        static void Main(string[] _)
         {
-            bool bDatabaseOK = false;
+            Console.Title = "Graal 2.1.5 List Server";
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(" -------------------------------------------------");
+            Console.WriteLine("  Graal 2.1.5 List Server (Created by Seipheroth)");
+            Console.WriteLine(" -------------------------------------------------\n");
+            Console.ForegroundColor = ConsoleColor.Gray;
 
-            /* Show a little introduction text. */
-            Console.WriteLine("-----------------------------------------------");
-            Console.WriteLine("Graal 2.1.5 List Server (Created by Seipheroth)");
-            Console.WriteLine("-----------------------------------------------\n");
+            // Load the server configuration file.
+            Configuration = new Config("listserver.cfg");
 
-            /* Get the startup path. */
-            StartupPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
+            LoginDisabled = Configuration.GetBool("disablelogin", false);
 
-            /* Load the listserver config. */
-            Config = new Config("config/listserver.cfg");
-
-            if (Config.GetBool("disablelogin")) DisableLogin = true;
-
-            string sDBType = Config.Get("dbtype").ToLower();
-            switch (sDBType)
+            // Initialize the database.
+            var databaseOk = true;
+            try
             {
-                /* Try to create a connection with the MySQL server. */
-                default:
-                case "mysql":
-                    DB = new MySQL();
-                    bDatabaseOK = ((MySQL)DB).Connect(Config["mysql_hostname"], Config["mysql_username"], Config["mysql_password"], Config["mysql_database"]);
-                    Log.Write(LogLevel.Success, "Server", "Connected to MySQL server.");
-                    break;
+                Database = new JsonDatabase(Configuration);
 
-                /* Use a text database */
-                case "file":
-                case "text":
-                case "textdb":
-                    DB = new TextDB();
-                    bDatabaseOK = ((TextDB)DB).Init();
-                    Log.Write(LogLevel.Success, "Server", "Text database initialized.");
-                    break;
+                Log.Write(LogLevel.Info, "Program", "Database initialized succesfully");
+            }
+            catch (Exception e)
+            {
+                Log.Write(LogLevel.Error, "Program", e.Message);
+
+                databaseOk = false;
             }
 
-
-            if (bDatabaseOK)
+            // If the database was initialized succesfully, start the server.
+            if (databaseOk)
             {
-                /* Get the port number from the config file. */
-                int iPort = 21555;
-                if (Config.Contains("port"))
+                var port = Configuration.GetInt("port", 21555);
+                if (port == 0)
                 {
-                    try
-                    {
-                        iPort = Config.GetInt("port");
-                    }
-                    catch 
-                    {
-                        Log.Write(LogLevel.Error, "Config", "Invalid port '{0}'.", Config["port"]);
-                    }
-                    if (iPort == 0) iPort = 21555;
+                    port = 21555;
                 }
 
-                /* Start the listserver. */
-                ServerList = DB.GetServers();
-
-                Server oServer = new Server(iPort);
-
+                new Server(port);
             }
             else
             {
-
-                /* Failed to connect to the MySQL server. */
-                Console.WriteLine("\nPress any key to continue.");
+                Console.WriteLine("\nPress any key to continue");
                 Console.ReadKey();
-
             }
         }
     }

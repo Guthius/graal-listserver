@@ -2,27 +2,25 @@ using System;
 
 namespace Listserver
 {
-    public enum LogLevel
-    {
-        Info,
-        Error,
-        Warning,
-        Success,
-        Debug
-    }
-
     public class Log
     {
         /// <summary>
         /// Writes a line to the log.
         /// </summary>
         /// <param name="logLevel">The log level of the log message.</param>
-        /// <param name="prefix">The prefix of the message, this is usually something like Error, Notice, etc.</param> 
+        /// <param name="tag">The message tage, this is usually something like Error, Notice, etc.</param> 
         /// <param name="message">The log message.</param>
-        public static void Write(LogLevel logLevel, string prefix, string message, params object[] args)
+        public static void Write(LogLevel logLevel, string tag, string message, params object[] args)
         {
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.Write("[" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fff") + "]");
+
+            Console.ForegroundColor = ConsoleColor.White;
+            tag = tag.Trim();
+            if (tag.Length > 0)
+            {
+                Console.Write("[" + tag + "] ");
+            }
 
             switch (logLevel)
             {
@@ -38,18 +36,24 @@ namespace Listserver
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     break;
 
-                case LogLevel.Success:
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    break;
-
                 case LogLevel.Debug:
-                    Console.ForegroundColor = ConsoleColor.Blue;
+                    Console.ForegroundColor = ConsoleColor.Cyan;
                     break;
             }
 
-            Console.Write("[" + prefix + "] ");
-            Console.ForegroundColor = ConsoleColor.White;
             Console.Write(string.Format(message, args) + "\n");
+            Console.ForegroundColor = ConsoleColor.Gray;
         }
+    }
+
+    /// <summary>
+    /// Identifies the level/importance of a log message.
+    /// </summary>
+    public enum LogLevel
+    {
+        Info,
+        Error,
+        Warning,
+        Debug
     }
 }

@@ -23,33 +23,50 @@ namespace Listserver
         }
 
         /// <summary>
+        /// Gets the string value of a configuration item. If the item cannot be found it returns a empty string.
+        /// </summary>
+        /// <param name="key">The key of the configuration item.</param>
+        /// <param name="defaultValue">The default value of the configuration item.</param>
+        /// <returns>Value of the configuration item.</returns>
+        public string Get(string key, string defaultValue = "")
+        {
+            if (settings.ContainsKey(key))
+            {
+                return settings[key];
+            }
+            return defaultValue ?? "";
+        }
+
+        /// <summary>
         /// Gets the boolean value of a configuration item. If the item cannot be found it returns a empty string.
         /// </summary>
         /// <param name="key">The key of the configuration item.</param>
+        /// <param name="defaultValue">The default value of the configuration item.</param>
         /// <returns>Value of the configuration item.</returns>
-        public bool GetBool(string key)
+        public bool GetBool(string key, bool defaultValue = false)
         {
             var value = Get(key);
             if (!string.IsNullOrEmpty(key) && bool.TryParse(value, out var result))
             {
                 return result;
             }
-            return false;
+            return defaultValue;
         }
 
         /// <summary>
         /// Gets the integer value of a configuration item. If the item cannot be found it returns a empty string.
         /// </summary>
         /// <param name="key">The key of the configuration item.</param>
+        /// <param name="defaultValue">The default value of the configuration item.</param>
         /// <returns>Value of the configuration item.</returns>
-        public int GetInt(string key)
+        public int GetInt(string key, int defaultValue = 0)
         {
             var value = Get(key);
             if (!string.IsNullOrEmpty(key) && int.TryParse(value, out var result))
             {
                 return result;
             }
-            return 0;
+            return defaultValue;
         }
 
         /// <summary>
@@ -65,31 +82,6 @@ namespace Listserver
                 if (key != string.Empty)
                 {
                     settings[key] = value;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Checks if a element with the specified key exists.
-        /// </summary>
-        /// <param name="key">The key to check for.</param>
-        public bool Contains(string key) => settings.ContainsKey(key);
-
-        /// <summary>
-        /// Saves the configuration file.
-        /// </summary>
-        public void Save()
-        {
-            if (!string.IsNullOrWhiteSpace(path))
-            {
-                using (var stream = File.OpenWrite(path))
-                using (var writer = new StreamWriter(stream))
-                {
-                    writer.WriteLine("#\n# Graal Listserver Config File\n#");
-                    foreach (var setting in settings)
-                    {
-                        writer.WriteLine(setting.Key + "=" + setting.Value);
-                    }
                 }
             }
         }

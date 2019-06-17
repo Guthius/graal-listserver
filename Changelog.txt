@@ -1,3 +1,8 @@
+Changes v1.0.0
+--------------
+- Dropped support for MySQL databases and the text database now stores
+  data in JSON files instead of INI files.
+
 Changes v0.9.1
 --------------
 - Authentication can be disabled by changing the 'disablelogin'
