@@ -1,0 +1,31 @@
+Changes v0.9.1
+--------------
+- Authentication can be disabled by changing the 'disablelogin'
+  setting (suggested by Agret ;).
+
+Changes v0.9
+--------------
+- Cleaned up some parts of code that where still messy ;).
+- Added support for text (flatfile) database, which is now the default
+  type of database used.
+- The settings 'dbtype' and 'textdb_path' config values have been
+  added to allow switching between mysql and text databases.
+- Fixed bug in disconnect function (disconnect message was never send
+  to the client).
+
+Changes v0.7
+--------------
+- The port can now be configured in serverlist.cfg.
+- The server is now running on all ip's instead of the loopback address.
+- Made the outgoing data go into a buffer which is emptied each cycle.
+- Added some better error handling (more error details are shown).
+- The 'showmore' and 'showmore_url' config values are now being used.
+- The 'welcome' and 'hidewelcome' config values are now being used.
+- You can now set the port the server has to run on in the config file.
+- The console no longer displays a message when someone disconnects, 
+  for some reason the server isn't able to detect this anymore.
+- The 'Pay by Credit Card' and 'Pay by Phone' buttons can now be used.
+
+Changes v0.5
+--------------
+- First properly working version!
