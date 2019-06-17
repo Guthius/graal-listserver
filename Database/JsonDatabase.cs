@@ -17,8 +17,8 @@ namespace Listserver
         /// </summary>
         class Server
         {
-            [JsonProperty("gold")]
-            public bool Gold { get; set; }
+            [JsonProperty("premium")]
+            public bool Premium { get; set; }
 
             [JsonProperty("name")]
             public string Name { get; set; }
@@ -51,7 +51,7 @@ namespace Listserver
         /// <param name="configuration">The database configuration.</param>
         public JsonDatabase(Config configuration)
         {
-            path = configuration.Get("data_path", "data");
+            path = configuration.Get("data_path", "Data");
             if (string.IsNullOrWhiteSpace(path))
             {
                 throw new Exception("No path for the database was specified. please configure 'data_path' and restart.");
@@ -64,15 +64,15 @@ namespace Listserver
                     Directory.CreateDirectory(path);
                 }
 
-                accountsPath = Path.Combine(path, "accounts");
+                accountsPath = Path.Combine(path, "Accounts");
                 if (!Directory.Exists(accountsPath))
                 {
                     Directory.CreateDirectory(accountsPath);
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                throw new Exception("Error creating database directory structure.", e);
+                throw new Exception("Error creating data directory structure.", ex);
             }
         }
 
@@ -100,7 +100,7 @@ namespace Listserver
                     foreach (var server in servers)
                     {
                         var name = server.Name ?? "";
-                        if (server.Gold)
+                        if (server.Premium)
                         {
                             name = "P " + name;
                         }

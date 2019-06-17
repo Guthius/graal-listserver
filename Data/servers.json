@@ -1,0 +1,13 @@
+[
+	{
+		"premium": true,
+		"name": "My Server",
+		"language": "English",
+		"description": "Example server...",
+		"url": "github.com/Guthius/graal-listserver",
+		"version": "2.1.5",
+		"players": 0,
+		"ip": "localhost",
+		"port": 14900
+	}
+]

@@ -5,8 +5,7 @@ namespace Listserver
 {
     public class Config
     {
-        private readonly Dictionary<string, string> settings;
-        private readonly string path;
+        readonly Dictionary<string, string> settings;
 
         /// <summary>
         /// Gets the string value of a configuration item. If the item cannot be found it returns a empty string.
@@ -92,7 +91,6 @@ namespace Listserver
         /// <param name="path">The configuration file path.</param>
         public Config(string path)
         {
-            this.path = path;
             settings = new Dictionary<string, string>();
 
             try

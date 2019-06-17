@@ -17,13 +17,9 @@ namespace Listserver
         const int MSG_PAYBYPHONE = 6;
 
         string outgoingData = "";
+        readonly Socket socket;
         readonly byte[] receiveBuffer = new byte[4096];
         readonly byte[] inflateBuffer = new byte[204800];
-
-        /// <summary>
-        /// Gets or sets the underlying socket of the player.
-        /// </summary>
-        public Socket Socket { get; private set; }
 
         /// <summary>
         /// Gets or sets the ID of the player.
@@ -38,8 +34,8 @@ namespace Listserver
         {
             ID = socket.RemoteEndPoint.ToString();
 
-            Socket = socket;
-            Socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, OnDataReceived, null);
+            this.socket = socket;
+            this.socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, this.OnDataReceived, null);
         }
 
         /// <summary>
@@ -47,7 +43,7 @@ namespace Listserver
         /// </summary>
         /// <param name="data">Data to compress.</param>
         /// <returns>Array containg the uncompressed bytes.</returns>
-        public byte[] Compress(string data)
+        byte[] Compress(string data)
         {
             var memoryStream = new MemoryStream();
 
@@ -65,7 +61,7 @@ namespace Listserver
         /// <summary>
         /// Sends all data that is waiting to be send, and clears the outgoing messages.
         /// </summary>
-        public void Flush()
+        void Flush()
         {
             if (outgoingData != string.Empty)
             {
@@ -94,7 +90,7 @@ namespace Listserver
             // Send the data to the client.
             try
             {
-                Socket.Send(packet);
+                socket.Send(packet);
                 Log.Write(LogLevel.Debug, "Player", "Sent data to {0} ({1} bytes)", ID, packet.Length);
             }
             catch (Exception ex)
@@ -122,36 +118,36 @@ namespace Listserver
                 Send(Convert.ToString((char)(32 + MSG_DISCONNECT)) + message + Convert.ToString((char)10));
             }
 
-            Socket.Close();
+            socket.Close();
         }
 
         /// <summary>
         /// Changes the message shown in the bottom center area of the client.
         /// </summary>
         /// <param name="message">The message to display in the bottom.</param>
-        public void ShowMessage(string message) => Send(MSG_MOTD, message);
+        void ShowMessage(string message) => Send(MSG_MOTD, message);
 
         /// <summary>
         /// Sends the serverlist the the player.
         /// </summary>
-        public void SendServerList() => Send(MSG_SERVERLIST, Program.Database.GetServers());
+        void SendServerList() => Send(MSG_SERVERLIST, Program.Database.GetServers());
 
         /// <summary>
         /// Makes the 'Show More' button visible on the client, which will lead them to the specified URL when clicked.
         /// </summary>
         /// <param name="url">The URL the button should lead to.</param>
-        public void EnableShowMore(string url) => Send(MSG_SHOWMORE, url);
+        void EnableShowMore(string url) => Send(MSG_SHOWMORE, url);
 
         /// <summary>
         /// Makes the 'Pay by Credit Card' button visible on the client, which will lead them to the specified URL when clicked.
         /// </summary>
         /// <param name="url">The URL the button should lead to.</param>
-        public void EnablePayByCreditCard(string url) => Send(MSG_PAYBYCREDITCARD, url);
+        void EnablePayByCreditCard(string url) => Send(MSG_PAYBYCREDITCARD, url);
 
         /// <summary>
         /// Makes the 'Pay by Phone' button visible on the client.
         /// </summary>
-        public void EnablePayByPhone() => Send(MSG_PAYBYPHONE, "1");
+        void EnablePayByPhone() => Send(MSG_PAYBYPHONE, "1");
 
         /// <summary>
         /// Called whenever data is received from the player.
@@ -159,7 +155,7 @@ namespace Listserver
         /// <param name="asyncResult"></param>
         void OnDataReceived(IAsyncResult asyncResult)
         {
-            var bytesReceived = Socket.EndReceive(asyncResult);
+            var bytesReceived = socket.EndReceive(asyncResult);
             if (bytesReceived > 0)
             {
                 int packetSize = (receiveBuffer[0] >> 8) + receiveBuffer[1];
@@ -183,7 +179,7 @@ namespace Listserver
                     }
                 }
 
-                Socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, OnDataReceived, null);
+                socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, OnDataReceived, null);
             }
             else
             {
@@ -198,7 +194,7 @@ namespace Listserver
         /// </summary>
         /// <param name="messageType">Type of package.</param>
         /// <param name="messageData">Data of the package.</param>
-        public void Handle(int messageType, string messageData)
+        void Handle(int messageType, string messageData)
         {
             switch (messageType)
             {
@@ -228,10 +224,10 @@ namespace Listserver
                         if (!Program.LoginDisabled)
                             Log.Write(LogLevel.Info, "Player", "{0} has logged in as {1}", ID, accountName);
 
-                        // Append the account name to the player ID.
+                        // Append the account name to the ID.
                         ID = ID + " (" + accountName + ")";
 
-                        // Check if the message in the bottom of the client should be shown or not, and get the message which should be shown.
+                        // Get the message of the day.
                         var motd = Program.Configuration.Get("motd", "").Trim();
                         if (motd.Length > 0)
                         {
@@ -266,7 +262,8 @@ namespace Listserver
                     else
                     {
                         Log.Write(LogLevel.Error, "Player", "Login failed for {0}", ID);
-                        Disconnect("Invalid username or password.");
+
+                        Disconnect("Invalid account name or password.");
                     }
                     break;
             }
