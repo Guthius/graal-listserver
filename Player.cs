@@ -96,7 +96,7 @@ namespace Listserver
             try
             {
                 Socket.Send(packet);
-                Log.Write(LogLevel.Debug, "Player", "Send data to {0} ({1} bytes)", ID, packet.Length);
+                Log.Write(LogLevel.Debug, "Player", "Sent data to {0} ({1} bytes)", ID, packet.Length);
             }
             catch (Exception ex)
             {
