@@ -231,6 +231,8 @@ namespace Listserver
                         var motd = Program.Configuration.Get("motd", "").Trim();
                         if (motd.Length > 0)
                         {
+                            motd = motd.Replace("%{AccountName}", accountName);
+
                             ShowMessage(motd);
                         }
 

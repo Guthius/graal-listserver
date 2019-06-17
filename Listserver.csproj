@@ -89,9 +89,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Changelog.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="app.config" />
     <None Include="Data\Accounts\admin.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
