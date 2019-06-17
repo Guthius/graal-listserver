@@ -8,7 +8,7 @@ namespace Listserver
         /// Writes a line to the log.
         /// </summary>
         /// <param name="logLevel">The log level of the log message.</param>
-        /// <param name="tag">The message tage, this is usually something like Error, Notice, etc.</param> 
+        /// <param name="tag">The message tag, this is usually something like Error, Notice, etc.</param> 
         /// <param name="message">The log message.</param>
         public static void Write(LogLevel logLevel, string tag, string message, params object[] args)
         {
