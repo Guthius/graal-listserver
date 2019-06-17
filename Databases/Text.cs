@@ -19,7 +19,7 @@ namespace Listserver.Databases
         public bool Init()
         {
             /* Get the path for the text database from the config file. */
-            _folder = Program.Config.Get("textdb_path");
+            _folder = Program.Config["textdb_path"];
             if (_folder == String.Empty)
             {
                 _canuse = false;

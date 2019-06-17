@@ -1,118 +1,128 @@
-using System;
-using System.Collections;
-using System.Text;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Listserver
 {
     public class Config
     {
-        private string    _data;
-        private Hashtable _config;
-        private string    _file;
+        private readonly Dictionary<string, string> settings;
+        private readonly string path;
 
         /// <summary>
-        /// Gets the value of a configuration item. If the item
-        /// cannot be found it returns a empty string.
+        /// Gets the string value of a configuration item. If the item cannot be found it returns a empty string.
         /// </summary>
-        /// <param name="Key">The name of the configuration item.</param>
+        /// <param name="key">The key of the configuration item.</param>
         /// <returns>Value of the configuration item.</returns>
-        public string Get(string Key)
+        public string Get(string key)
         {
-            if (_config.Contains(Key))
+            if (settings.ContainsKey(key))
             {
-                return (string)_config[Key];
+                return settings[key];
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         /// <summary>
-        /// Changes or adds a new configuration item.
+        /// Gets the boolean value of a configuration item. If the item cannot be found it returns a empty string.
         /// </summary>
-        /// <param name="Key">The name of the configuration item.</param>
-        /// <param name="Value">Value of the configuration item.</param>
-        public void Set(string Key, string Value)
+        /// <param name="key">The key of the configuration item.</param>
+        /// <returns>Value of the configuration item.</returns>
+        public bool GetBool(string key)
         {
-            if (Key != String.Empty)
+            var value = Get(key);
+            if (!string.IsNullOrEmpty(key) && bool.TryParse(value, out var result))
             {
-                _config[Key] = Value;
+                return result;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the integer value of a configuration item. If the item cannot be found it returns a empty string.
+        /// </summary>
+        /// <param name="key">The key of the configuration item.</param>
+        /// <returns>Value of the configuration item.</returns>
+        public int GetInt(string key)
+        {
+            var value = Get(key);
+            if (!string.IsNullOrEmpty(key) && int.TryParse(value, out var result))
+            {
+                return result;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Gets or sets the value of the configuration item with the specified key.
+        /// </summary>
+        /// <param name="key">The key of the configuration item.</param>
+        /// <returns>The value of the configuration item.</returns>
+        public string this[string key]
+        {
+            get => Get(key);
+            set
+            {
+                if (key != string.Empty)
+                {
+                    settings[key] = value;
+                }
             }
         }
 
         /// <summary>
         /// Checks if a element with the specified key exists.
         /// </summary>
-        /// <param name="Key">The key to check for.</param>
-        public bool Contains(string Key)
-        {
-            return _config.Contains(Key);
-        }
+        /// <param name="key">The key to check for.</param>
+        public bool Contains(string key) => settings.ContainsKey(key);
 
         /// <summary>
         /// Saves the configuration file.
         /// </summary>
         public void Save()
         {
-            if (_file != String.Empty)
+            if (!string.IsNullOrWhiteSpace(path))
             {
-                /* Open the file for writing. */
-                FileStream f = new FileStream(_file, FileMode.OpenOrCreate);
-                StreamWriter sw = new StreamWriter(f);
-
-                sw.WriteLine("#\n# Graal Listserver Config File\n#");
-
-                /* Write the entire config to the file. */
-                string[] sKeys = new string[_config.Count];
-
-                _config.Keys.CopyTo(sKeys, 0);
-                foreach (string sKey in sKeys)
+                using (var stream = File.OpenWrite(path))
+                using (var writer = new StreamWriter(stream))
                 {
-                    if (sKey != String.Empty) sw.Write("\n" + sKey + "=" + _config[sKey]);
+                    writer.WriteLine("#\n# Graal Listserver Config File\n#");
+                    foreach (var setting in settings)
+                    {
+                        writer.WriteLine(setting.Key + "=" + setting.Value);
+                    }
                 }
-
-                /* Close the file stream. */
-                sw.Close();
-                f.Close();
             }
         }
 
         /// <summary>
-        /// Contructs a configuration object by loading a
-        /// configuration file.
+        /// Initializes a new instance of the <see cref="Config"/> class.
         /// </summary>
-        /// <param name="File">The configuration file.</param>
-        public Config(string File)
+        /// <param name="path">The configuration file path.</param>
+        public Config(string path)
         {
-            _file = File;
-            _config = new Hashtable();
+            this.path = path;
+            settings = new Dictionary<string, string>();
 
             try
             {
-                /* Open the file and read its contents. */
-                FileStream f = new FileStream(File, FileMode.Open);
-                StreamReader sr = new StreamReader(f);
-                _data = sr.ReadToEnd();
-
-                /* Close the file stream. */
-                sr.Close();
-                f.Close();
-
-                /* Parse the config file. */
-                if (_data != String.Empty)
+                var lines = File.ReadAllLines(path);
+                for (int i = 0; i < lines.Length; i++)
                 {
-                    string[] sLines = _data.Split("\n".ToCharArray());
-                    foreach (string sLine in sLines)
+                    var line = lines[i].Trim();
+                    if (line.Length > 0 && line[0] != '#')
                     {
-                        if (sLine != String.Empty && sLine.Substring(0,1) != "#")
+                        var j = line.IndexOf('=');
+                        if (j == -1)
                         {
-                            string[] sFields = sLine.Split("=".ToCharArray());
-                            if (sFields.Length == 2)
-                            {
-                                if (sFields[0].Trim() != String.Empty)
-                                {
-                                    _config.Add(sFields[0].Trim().ToLower(), sFields[1].Trim());
-                                }
-                            }
+                            continue;
+                        }
+
+                        var key = line.Substring(0, j).Trim();
+                        if (key.Length > 0)
+                        {
+                            var value = line.Substring(j + 1).Trim();
+
+                            settings.Add(key, value);
                         }
                     }
                 }

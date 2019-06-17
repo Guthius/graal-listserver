@@ -30,8 +30,7 @@ namespace Listserver
             /* Load the listserver config. */
             Config = new Config("config/listserver.cfg");
 
-            if (Config.Get("disablelogin").ToLower() == "true") DisableLogin = true;
-            
+            if (Config.GetBool("disablelogin")) DisableLogin = true;
 
             string sDBType = Config.Get("dbtype").ToLower();
             switch (sDBType)
@@ -40,7 +39,7 @@ namespace Listserver
                 default:
                 case "mysql":
                     DB = new MySQL();
-                    bDatabaseOK = ((MySQL)DB).Connect(Config.Get("mysql_hostname"), Config.Get("mysql_username"), Config.Get("mysql_password"), Config.Get("mysql_database"));
+                    bDatabaseOK = ((MySQL)DB).Connect(Config["mysql_hostname"], Config["mysql_username"], Config["mysql_password"], Config["mysql_database"]);
                     Log.ToConsole("Server", "Connected to MySQL server.", 10);
                     break;
 
@@ -63,11 +62,11 @@ namespace Listserver
                 {
                     try
                     {
-                        iPort = int.Parse(Config.Get("port"));
+                        iPort = Config.GetInt("port");
                     }
                     catch 
                     {
-                        Log.ToConsole("Config", "Invalid port '" + Config.Get("port") + "'.", 12);
+                        Log.ToConsole("Config", "Invalid port '" + Config["port"] + "'.", 12);
                     }
                     if (iPort == 0) iPort = 21555;
                 }

@@ -193,7 +193,7 @@ namespace Listserver
                          * be shown or not, and get the message which should be shown. */
                         if (Program.Config.Contains("welcome"))
                         {
-                            sWelcome = Program.Config.Get("welcome");
+                            sWelcome = Program.Config["welcome"];
                             if (sWelcome == String.Empty)
                             {
                                 sWelcome = "Listserver 2.1.5 Emulator By Seipheroth";
@@ -201,7 +201,7 @@ namespace Listserver
                         }
                         if (Program.Config.Contains("hidewelcome"))
                         {
-                            if (Program.Config.Get("hidewelcome").ToLower() != "true")
+                            if (!Program.Config.GetBool("hidewelcome"))
                             {
                                 ShowMessage(sWelcome);
                             }
@@ -214,9 +214,9 @@ namespace Listserver
                         /* Check if the 'Pay by Credit Card' button should be shown. */
                         if (Program.Config.Contains("paybycreditcard"))
                         {
-                            if (Program.Config.Get("paybycreditcard") == "true")
+                            if (Program.Config.GetBool("paybycreditcard"))
                             {
-                                sURL = Program.Config.Get("paybycreditcard_url");
+                                sURL = Program.Config["paybycreditcard_url"];
                                 if (sURL == String.Empty) sURL = "localhost/";
 
                                 EnablePayByCreditCard(sURL);
@@ -226,7 +226,7 @@ namespace Listserver
                         /* Check if the 'Pay by Phone' button should be shown. */
                         if (Program.Config.Contains("paybyphone"))
                         {
-                            if (Program.Config.Get("paybyphone") == "true")
+                            if (Program.Config.GetBool("paybyphone"))
                             {
                                 EnablePayByPhone();
                             }
@@ -235,9 +235,9 @@ namespace Listserver
                         /* Check if the 'Show More' button should be shown. */
                         if (Program.Config.Contains("showmore"))
                         {
-                            if (Program.Config.Get("showmore").ToLower() == "true")
+                            if (Program.Config.GetBool("showmore"))
                             {
-                                sURL = Program.Config.Get("showmore_url");
+                                sURL = Program.Config["showmore_url"];
                                 if (sURL == String.Empty) sURL = "www.gamemagi.com/gserver";
 
                                 EnableShowMore(sURL);
