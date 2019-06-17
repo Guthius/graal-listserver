@@ -49,15 +49,14 @@ namespace Listserver
         /// <returns>Array containg the uncompressed bytes.</returns>
         public byte[] Compress(string data)
         {
-            using (var memoryStream = new MemoryStream())
-            {
-                using (var deflaterStream = new DeflaterOutputStream(memoryStream, new Deflater(Deflater.BEST_COMPRESSION, false)))
-                {
-                    byte[] buffer = Encoding.ASCII.GetBytes(data);
+            var memoryStream = new MemoryStream();
 
-                    deflaterStream.Write(buffer, 0, buffer.Length);
-                    deflaterStream.Finish();
-                }
+            using (var deflaterStream = new DeflaterOutputStream(memoryStream, new Deflater(Deflater.BEST_COMPRESSION, false)))
+            {
+                byte[] buffer = Encoding.ASCII.GetBytes(data);
+
+                deflaterStream.Write(buffer, 0, buffer.Length);
+                deflaterStream.Finish();
 
                 return memoryStream.ToArray();
             }
