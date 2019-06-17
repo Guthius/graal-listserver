@@ -94,8 +94,7 @@ namespace Listserver
             string serversPath = Path.Combine(path, "servers.json");
             if (File.Exists(serversPath))
             {
-                using (var stream = File.OpenText(serversPath))
-                using (var reader = new JsonTextReader(stream))
+                using (var reader = new JsonTextReader(File.OpenText(serversPath)))
                 {
                     var servers = serializer.Deserialize<List<Server>>(reader);
                     foreach (var server in servers)
@@ -135,8 +134,7 @@ namespace Listserver
             string accountPath = Path.Combine(accountsPath, accountName + ".json");
             if (File.Exists(accountPath))
             {
-                using (var stream = File.OpenText(accountPath))
-                using (var reader = new JsonTextReader(stream))
+                using (var reader = new JsonTextReader(File.OpenText(accountPath)))
                 {
                     var accountData = (JObject)JToken.ReadFrom(reader);
 
