@@ -61,22 +61,20 @@ namespace Listserver
             bPacket[0] = (byte)((bData.Length >> 8) & 0xFF);
             bPacket[1] = (byte)(bData.Length & 0xFF);
 
-            // Move the data of the bData to the bPacket
-            // array right behind the packet size.
+            // Move the data of the bData to the bPacket array right behind the packet size.
             for (int i = 0; i < bData.Length; i++) bPacket[i + 2] = bData[i];
 
             // Send the data to the client.
             try
             {
                 Sock.Send(bPacket);
-                Log.ToConsole("Server", "Send data to " + Sock.RemoteEndPoint + " (" + bPacket.Length.ToString() + " bytes)", 10);
+                Log.Write(LogLevel.Debug, "Server", "Send data to {0} ({1} bytes)", Sock.RemoteEndPoint, bPacket.Length);
             }
             catch (Exception e)
             {
-                /* Display a stack trace of the error. */
-                Log.ToConsole("Server", e.Message, 4);
-                Log.ToConsole("Server", e.StackTrace, 4);
-                Log.ToConsole("Server", "Failed to send data to " + Sock.RemoteEndPoint + " (" + bPacket.Length.ToString() + " bytes)", 12);
+                Log.Write(LogLevel.Error, "Server", e.Message);
+                Log.Write(LogLevel.Error, "Server", e.StackTrace);
+                Log.Write(LogLevel.Error, "Server", "Failed to send data to {0} ({1} bytes)", Sock.RemoteEndPoint, bPacket.Length);
             }
         }
 
@@ -187,7 +185,7 @@ namespace Listserver
                     {
                         /* Login success. */
                         if (!Program.DisableLogin)
-                            Log.ToConsole("Server", Sock.RemoteEndPoint + " has logged in as " + sUsername + ".", 10);
+                            Log.Write(LogLevel.Success, "Server", "{0} has logged in as {1}.", Sock.RemoteEndPoint, sUsername);
 
                         /* Check if the message in the bottom of the client should
                          * be shown or not, and get the message which should be shown. */
@@ -249,7 +247,7 @@ namespace Listserver
                     else
                     {
                         /* Login failed. */
-                        Log.ToConsole("Server", "Login failed for " + Sock.RemoteEndPoint+ ".", 12);
+                        Log.Write(LogLevel.Error, "Server", "Login failed for {0}.", Sock.RemoteEndPoint);
                         Disconnect("Invalid username or password.");
                     }
                 break;

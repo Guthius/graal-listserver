@@ -1,87 +1,55 @@
 using System;
-using System.IO;
-using System.Runtime.InteropServices;
 
 namespace Listserver
 {
-    // COLOR CODES:
-    //
-    //  1 = dark blue
-    //  2 = dark green
-    //  4 = dark red
-    //  5 = purple
-    //  6 = gold
-    //  7 = light gray (default)
-    //  8 = gray
-    //  9 = blue
-    // 10 = green
-    // 11 = light blue (teal)
-    // 12 = red
-    // 13 = pink
-    // 14 = yellow
-    // 15 = white
+    public enum LogLevel
+    {
+        Info,
+        Error,
+        Warning,
+        Success,
+        Debug
+    }
 
     public class Log
     {
-        [DllImport("kernel32.dll")]
-        public static extern bool SetConsoleTextAttribute(IntPtr hConsoleOutput, int wAttributes);
-
-        [DllImport("kernel32.dll")]
-        public static extern IntPtr GetStdHandle(uint nStdHandle);
-
         /// <summary>
-        /// Get the handle for the console window.
+        /// Writes a line to the log.
         /// </summary>
-        public static IntPtr ConsoleHandle = GetStdHandle(0xfffffff5);
-
-        /// <summary>
-        /// Write a line of information into the console.
-        /// </summary>
-        /// <param name="Prefix">The prefix of the message, this is usually something like Error, Notice, etc.</param>
-        /// <param name="Value">This is the actual information or message that should be shown.</param>
-        /// <param name="cid">Id of the color to use for the prefix.</param>
-        public static void ToConsole(string Prefix, string Message, int cid)
+        /// <param name="logLevel">The log level of the log message.</param>
+        /// <param name="prefix">The prefix of the message, this is usually something like Error, Notice, etc.</param> 
+        /// <param name="message">The log message.</param>
+        public static void Write(LogLevel logLevel, string prefix, string message, params object[] args)
         {
-            SetConsoleTextAttribute(ConsoleHandle, cid);
-            Console.Write("[" + Prefix + "]");
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.Write("[" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fff") + "]");
 
-            SetConsoleTextAttribute(ConsoleHandle, 15);
-            Console.Write(": " + Message + "\n");
-        }
-
-        /// <summary>
-        /// Write a new log entry to the specified file.
-        /// </summary>
-        /// <param name="Filename">Location of the log file.</param>
-        /// <param name="Message">Message to write to the log file.</param>
-        /// <param name="cid">Color used to write the message to the console.</param>
-        public static void Write(string Filename, string Message, int cid)
-        {
-            FileStream LogFile = new FileStream(Filename, FileMode.Append);
-            StreamWriter Output = new StreamWriter(LogFile);
-            try
+            switch (logLevel)
             {
-                /* Write the message to the log file and the console. */
-                Output.WriteLine(DateTime.Now.ToString() + " - " + Message);
-                SetConsoleTextAttribute(ConsoleHandle, cid);
-                Console.WriteLine(Message);
-                SetConsoleTextAttribute(ConsoleHandle, 7);
-            }
-            finally
-            {
-                Output.Close();
-                LogFile.Close();
-            }
-        }
+                case LogLevel.Info:
+                    Console.ForegroundColor = ConsoleColor.White;
+                    break;
 
-        /// <summary>
-        /// Write a new log entry to the specified file.
-        /// </summary>
-        /// <param name="Filename">Location of the log file.</param>
-        /// <param name="Message">Message to write to the log file.</param>
-        public static void Write(string Filename, string Message)
-        {
-            Write(Filename, Message, 15);
+                case LogLevel.Error:
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    break;
+
+                case LogLevel.Warning:
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    break;
+
+                case LogLevel.Success:
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    break;
+
+                case LogLevel.Debug:
+                    Console.ForegroundColor = ConsoleColor.Blue;
+                    break;
+            }
+
+            Console.Write("[" + prefix + "] ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(string.Format(message, args) + "\n");
         }
     }
 }

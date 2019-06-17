@@ -48,7 +48,7 @@ namespace Listserver.Databases
             }
             catch (Exception e)
             {
-                Log.ToConsole("Server", e.Message.Replace("[MySQL][ODBC 3.51 Driver]", "").Replace("ERROR ", ""), 4);
+                Log.Write(LogLevel.Error, "Server", e.Message, 4);
             }
 
             return sList;
@@ -78,7 +78,7 @@ namespace Listserver.Databases
             }
             catch (Exception e)
             {
-                Log.ToConsole("Server", e.Message.Replace("[MySQL][ODBC 3.51 Driver]", "").Replace("ERROR ", ""), 4);
+                Log.Write(LogLevel.Error, "Server", e.Message);
                 return false;
             }
             return false;

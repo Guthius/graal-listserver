@@ -20,9 +20,9 @@ namespace Listserver
             bool bDatabaseOK = false;
 
             /* Show a little introduction text. */
-            Console.WriteLine("          -----------------------------------------------");
-            Log.ToConsole(" Info ", "Graal 2.1.5 List Server (Created by Seipheroth)\n\n          Credits:\n             - Marlon (MySQL tables ;)", 31);
-            Console.WriteLine("          -----------------------------------------------\n");
+            Console.WriteLine("-----------------------------------------------");
+            Console.WriteLine("Graal 2.1.5 List Server (Created by Seipheroth)");
+            Console.WriteLine("-----------------------------------------------\n");
 
             /* Get the startup path. */
             StartupPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
@@ -40,7 +40,7 @@ namespace Listserver
                 case "mysql":
                     DB = new MySQL();
                     bDatabaseOK = ((MySQL)DB).Connect(Config["mysql_hostname"], Config["mysql_username"], Config["mysql_password"], Config["mysql_database"]);
-                    Log.ToConsole("Server", "Connected to MySQL server.", 10);
+                    Log.Write(LogLevel.Success, "Server", "Connected to MySQL server.");
                     break;
 
                 /* Use a text database */
@@ -49,7 +49,7 @@ namespace Listserver
                 case "textdb":
                     DB = new TextDB();
                     bDatabaseOK = ((TextDB)DB).Init();
-                    Log.ToConsole("Server", "Text database initialized.", 10);
+                    Log.Write(LogLevel.Success, "Server", "Text database initialized.");
                     break;
             }
 
@@ -66,7 +66,7 @@ namespace Listserver
                     }
                     catch 
                     {
-                        Log.ToConsole("Config", "Invalid port '" + Config["port"] + "'.", 12);
+                        Log.Write(LogLevel.Error, "Config", "Invalid port '{0}'.", Config["port"]);
                     }
                     if (iPort == 0) iPort = 21555;
                 }

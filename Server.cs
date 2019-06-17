@@ -30,8 +30,8 @@ namespace Listserver
                 _server = new TcpListener(IPAddress.Parse("0.0.0.0"), Port);
                 _server.Start();
 
-                Log.ToConsole("Server", "The server is running on port " + Port.ToString() + ".", 10);
-                Log.ToConsole("Server", "Listening for connections...", 10);
+                Log.Write(LogLevel.Success, "Server", "The server is running on port {0}.", Port);
+                Log.Write(LogLevel.Success, "Server", "Listening for connections...");
 
                 /* Main application loop. */
                 while (true)
@@ -44,7 +44,7 @@ namespace Listserver
 
                         _players.Add(o);
 
-                        Log.ToConsole("Server", "Accepted connection from " + o.Sock.RemoteEndPoint + ".", 10);
+                        Log.Write(LogLevel.Success, "Server", "Accepted connection from {0}.", o.Sock.RemoteEndPoint);
                     }
 
                     /* Process data from all players. */
@@ -67,8 +67,8 @@ namespace Listserver
                         catch (Exception ex)
                         {
                             /* Error receiving data, disconnect player. */
-                            Log.ToConsole("Server", ex.Message, 4);
-                            Log.ToConsole("Server", ex.StackTrace, 4);
+                            Log.Write(LogLevel.Error, "Server", ex.Message);
+                            Log.Write(LogLevel.Error, "Server", ex.StackTrace);
 
                             o.Sock.Close();
                             _players.RemoveAt(i);
@@ -79,7 +79,7 @@ namespace Listserver
                         if (iTotalReceived > 0)
                         {
                             int iPacketSize = ((int)bReceived[0] >> 8) + (int)bReceived[1];
-                            Log.ToConsole("Server", "Received data from " + o.Sock.RemoteEndPoint + " (" + (iPacketSize + 2).ToString() + " bytes)", 10);
+                            Log.Write(LogLevel.Debug, "Server", "Received data from {0} ({1} bytes)", o.Sock.RemoteEndPoint, (iPacketSize + 2));
 
                             if (iTotalReceived >= (iPacketSize + 2))
                             {

@@ -23,7 +23,7 @@ namespace Listserver.Databases
             if (_folder == String.Empty)
             {
                 _canuse = false;
-                Log.ToConsole("  DB  ", "No path for the text database was specified. please configure 'textdb_path' and restart.", 12);
+                Log.Write(LogLevel.Error, "DB", "No path for the text database was specified. please configure 'textdb_path' and restart.");
                 return false;
             }
 
