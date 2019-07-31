@@ -27,9 +27,9 @@ namespace Listserver
         {
             Console.Title = "Graal 2.1.5 List Server";
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(" -------------------------------------------------");
-            Console.WriteLine("  Graal 2.1.5 List Server (Created by Seipheroth)");
-            Console.WriteLine(" -------------------------------------------------\n");
+            Console.WriteLine(" -------------------------");
+            Console.WriteLine("  Graal 2.1.5 List Server ");
+            Console.WriteLine(" -------------------------\n");
             Console.ForegroundColor = ConsoleColor.Gray;
 
             // Load the server configuration file.

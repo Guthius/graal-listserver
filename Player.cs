@@ -35,7 +35,7 @@ namespace Listserver
             ID = socket.RemoteEndPoint.ToString();
 
             this.socket = socket;
-            this.socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, this.OnDataReceived, null);
+            this.socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, OnDataReceived, null);
         }
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace Listserver
             var bytesReceived = socket.EndReceive(asyncResult);
             if (bytesReceived > 0)
             {
-                int packetSize = (receiveBuffer[0] >> 8) + receiveBuffer[1];
+                var packetSize = (receiveBuffer[0] << 8) | receiveBuffer[1];
 
                 Log.Write(LogLevel.Debug, "Player", "Received data from {0} ({1} bytes)", ID, packetSize + 2);
 
@@ -184,8 +184,6 @@ namespace Listserver
             else
             {
                 Log.Write(LogLevel.Info, "Player", "{0} has disconnected", ID);
-
-                return;
             }
         }
 
