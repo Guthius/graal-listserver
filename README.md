@@ -1,4 +1,5 @@
 # Graal List Server
+[![Build Status](https://travis-ci.com/Guthius/graal-listserver.svg?branch=master)](https://travis-ci.com/Guthius/graal-listserver)
 
 A Graal 2.1.5 List Server Emulator written in C#.
 
