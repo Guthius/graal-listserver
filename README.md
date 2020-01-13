@@ -1,5 +1,6 @@
 # Graal List Server
 [![Build Status](https://travis-ci.com/Guthius/graal-listserver.svg?branch=master)](https://travis-ci.com/Guthius/graal-listserver)
+[![GitHub version](https://badge.fury.io/gh/Guthius%2Fgraal-listserver.svg)](https://badge.fury.io/gh/Guthius%2Fgraal-listserver)
 
 A Graal 2.1.5 List Server Emulator written in C#.
 
