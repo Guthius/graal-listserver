@@ -1,6 +1,6 @@
 namespace Listserver
 {
-    interface IDatabase
+    public interface IDatabase
     {
         /// <summary>
         /// Gets the list of servers as a single string.

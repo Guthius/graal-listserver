@@ -1,51 +1,60 @@
-using System;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using Serilog;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Listserver
 {
-    public class Server
+    public class Server : BackgroundService
     {
-        readonly TcpListener tcpListener;
+        private readonly IDatabase database;
+        private readonly ServerSettings options;
+        private Socket socket;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Server"/> class.
         /// </summary>
-        /// <param name="port">The server port.</param>
-        public Server(int port)
+        /// <param name="database">The database.</param>
+        /// <param name="options">The server options.</param>
+        public Server(IDatabase database, IOptions<ServerSettings> options)
         {
-            try
+            this.database = database;
+            this.options = options.Value;
+        }
+
+        public override Task StartAsync(CancellationToken cancellationToken)
+        {
+            socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            socket.Bind(new IPEndPoint(IPAddress.Any, options.Port));
+            socket.Listen((int)SocketOptionName.MaxConnections);
+
+            Log.Information("The server is running on port {Port}.", options.Port);
+            Log.Information("Listening for connections...");
+
+            return base.StartAsync(cancellationToken);
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
             {
-                // Start the server on the specified port...
-                tcpListener = new TcpListener(IPAddress.Any, port);
-                tcpListener.Start();
+                var client =
+                    await Task.Factory.FromAsync(
+                        socket.BeginAccept,
+                        socket.EndAccept,
+                        null);
 
-                Log.Write(LogLevel.Info, "Server", "The server is running on port {0}", port);
-                Log.Write(LogLevel.Info, "Server", "Listening for connections...");
+                if (client is null) continue;
 
-                // Main server loop.
-                while (true)
-                {
-                    if (tcpListener.Pending())
-                    {
-                        var socket = tcpListener.AcceptSocket();
+                _ = new Player(client, database, options).Run(stoppingToken);
 
-                        if (socket != null)
-                        {
-                            var player = new Player(socket);
-
-                            Log.Write(LogLevel.Info, "Server", "Accepted connection from {0}", player.ID);
-                        }
-                    }
-                }
+                await Task.Delay(10, stoppingToken);
             }
-            catch (Exception ex)
-            {
-                Log.Write(LogLevel.Error, "Server", ex.Message + "\n" + ex.StackTrace);
 
-                Console.WriteLine("\nPress any key to continue");
-                Console.ReadKey();
-            }
+            Log.Information("Server has stopped.");
         }
     }
 }

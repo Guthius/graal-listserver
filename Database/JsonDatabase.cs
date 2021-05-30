@@ -1,60 +1,61 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Microsoft.Extensions.Configuration;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 
 namespace Listserver
 {
     public class JsonDatabase : IDatabase
     {
-        readonly string path;
-        readonly string accountsPath;
-        readonly JsonSerializer serializer = new JsonSerializer();
+        private readonly string path;
+        private readonly string accountsPath;
 
         /// <summary>
         /// Represents a server.
         /// </summary>
         class Server
         {
-            [JsonProperty("premium")]
             public bool Premium { get; set; }
 
-            [JsonProperty("name")]
             public string Name { get; set; }
 
-            [JsonProperty("language")]
             public string Language { get; set; }
 
-            [JsonProperty("description")]
             public string Description { get; set; }
 
-            [JsonProperty("url")]
             public string Url { get; set; }
 
-            [JsonProperty("version")]
             public string Version { get; set; }
 
-            [JsonProperty("players")]
             public int Players { get; set; }
 
-            [JsonProperty("ip")]
             public string IP { get; set; }
 
-            [JsonProperty("port")]
             public int Port { get; set; }
+        }
+
+        /// <summary>
+        /// Represents an account.
+        /// </summary>
+        class Account
+        {
+            public string Name { get; set; }
+
+            public string Password { get; set; }
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonDatabase"/> class.
         /// </summary>
         /// <param name="configuration">The database configuration.</param>
-        public JsonDatabase(Config configuration)
+        public JsonDatabase(IConfiguration configuration)
         {
-            path = configuration.Get("data_path", "Data");
-            if (string.IsNullOrWhiteSpace(path))
+            path = configuration["DataPath"];
+            if (string.IsNullOrEmpty(path))
             {
-                throw new Exception("No path for the database was specified. please configure 'data_path' and restart.");
+                throw new Exception("No path for the database was specified. please configure 'DataPath' and restart.");
             }
 
             try
@@ -69,6 +70,8 @@ namespace Listserver
                 {
                     Directory.CreateDirectory(accountsPath);
                 }
+
+                Log.Information("Database initialized succesfully.");
             }
             catch (Exception ex)
             {
@@ -81,7 +84,7 @@ namespace Listserver
         /// </summary>
         /// <param name="data">The data to encode.</param>
         /// <returns></returns>
-        string Pack(string data) => Convert.ToString((char)(data.Length + 32)) + data;
+        private static string Pack(string data) => Convert.ToString((char)(data.Length + 32)) + data;
 
         /// <summary>
         /// Gets the list of servers as a single string.
@@ -89,62 +92,61 @@ namespace Listserver
         /// <returns></returns>
         public string GetServers()
         {
-            string serverList = "";
-
-            string serversPath = Path.Combine(path, "servers.json");
-            if (File.Exists(serversPath))
+            var serversPath = Path.Combine(path, "servers.json");
+            if (!File.Exists(serversPath))
             {
-                using (var reader = new JsonTextReader(File.OpenText(serversPath)))
-                {
-                    var servers = serializer.Deserialize<List<Server>>(reader);
-                    foreach (var server in servers)
-                    {
-                        var name = server.Name ?? "";
-                        if (server.Premium)
-                        {
-                            name = "P " + name;
-                        }
-
-                        serverList += (char)(32 + 8);
-                        serverList += Pack(name);
-                        serverList += Pack(server.Language ?? "");
-                        serverList += Pack(server.Description ?? "");
-                        serverList += Pack(server.Url ?? "");
-                        serverList += Pack(server.Version ?? "");
-                        serverList += Pack(server.Players.ToString());
-                        serverList += Pack(server.IP ?? "");
-                        serverList += Pack(server.Port.ToString());
-                    }
-
-                    return Convert.ToString((char)(servers.Count + 32)) + serverList;
-                }
+                return Convert.ToString((char)32);
             }
 
-            return Convert.ToString((char)32);
+            var json = File.ReadAllText(serversPath);
+
+            var servers = JsonSerializer.Deserialize<List<Server>>(json);
+            var serverList = "";
+
+            foreach (var server in servers)
+            {
+                var name = server.Name ?? "";
+                if (server.Premium)
+                {
+                    name = "P " + name;
+                }
+
+                serverList += (char)(32 + 8);
+                serverList += Pack(name);
+                serverList += Pack(server.Language ?? "");
+                serverList += Pack(server.Description ?? "");
+                serverList += Pack(server.Url ?? "");
+                serverList += Pack(server.Version ?? "");
+                serverList += Pack(server.Players.ToString());
+                serverList += Pack(server.IP ?? "");
+                serverList += Pack(server.Port.ToString());
+            }
+
+            return Convert.ToString((char)(servers.Count + 32)) + serverList;
         }
 
         /// <summary>
-        /// Checks whether a account with the specified credentials exists.
+        /// Checks whether an account with the specified credentials exists.
         /// </summary>
-        /// <param name="accountName">The name of the account.</param>
+        /// <param name="name">The name of the account.</param>
         /// <param name="password">The password.</param>
-        /// <returns>True if the account exists; otherwise, false.</returns>
-        public bool AccountExists(string accountName, string password)
+        /// <returns>True if the account exists and the password is valid; otherwise, false.</returns>
+        public bool AccountExists(string name, string password)
         {
-            string accountPath = Path.Combine(accountsPath, accountName + ".json");
-            if (File.Exists(accountPath))
+            var accountPath = Path.Combine(accountsPath, name + ".json");
+            if (!File.Exists(accountPath))
             {
-                using (var reader = new JsonTextReader(File.OpenText(accountPath)))
-                {
-                    var accountData = (JObject)JToken.ReadFrom(reader);
-
-                    var passwordToken = accountData["password"];
-                    if (passwordToken != null && passwordToken.ToString() == password)
-                    {
-                        return true;
-                    }
-                }
+                return false;
             }
+
+            var accountJson = File.ReadAllText(accountPath);
+            var account = JsonSerializer.Deserialize<Account>(accountJson);
+
+            if (account.Password is not null && account.Password.Equals(password))
+            {
+                return true;
+            }
+
             return false;
         }
     }
