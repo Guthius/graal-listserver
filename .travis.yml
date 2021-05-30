@@ -1,2 +1,7 @@
 language: csharp
 solution: Listserver.sln
+dotnet: 5.0
+
+script:
+ - dotnet restore
+ - dotnet build
