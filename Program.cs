@@ -1,11 +1,11 @@
 using Listserver;
+using Listserver.Database;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
-using System;
 
 Console.Title = "Graal 2.1.5 List Server";
 
@@ -45,7 +45,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Error(ex, "Failed to start server.");
+    Log.Error(ex, "Failed to start server");
 }
 
 Console.WriteLine();
