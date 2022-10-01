@@ -1,8 +1,8 @@
-using Listserver;
-using Listserver.Database;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OpenGraal.Server;
+using OpenGraal.Server.Database;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;

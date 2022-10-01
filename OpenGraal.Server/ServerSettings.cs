@@ -1,4 +1,4 @@
-﻿namespace Listserver;
+﻿namespace OpenGraal.Server;
 
 public class ServerSettings
 {

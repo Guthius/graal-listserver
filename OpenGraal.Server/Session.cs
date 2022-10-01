@@ -2,14 +2,16 @@ using System.Buffers;
 using System.Net.Sockets;
 using System.Text;
 using ICSharpCode.SharpZipLib.Zip.Compression;
-using Listserver.Database;
+using OpenGraal.Net;
+using OpenGraal.Server.Database;
+using OpenGraal.Server.Protocols.ListServer;
 using Serilog;
 
-namespace Listserver;
+namespace OpenGraal.Server;
 
 public class Session : ISession
 {
-    private readonly byte[] _inflateBuffer = new byte[204800];
+    private const int BufferSize = 204800;
     
     private readonly Socket _socket;
     private readonly ISessionHandler _handler;
@@ -23,11 +25,13 @@ public class Session : ISession
     private readonly object _sendLock = new();
     private readonly SocketAsyncEventArgs _sendEvent = new();
     private readonly byte[] _sendBuffer;
-    private int _sendBufferOffset;
+    private readonly PacketOutputStream _sendBufferStream;
     private bool _sending;
     private readonly byte[] _flushBuffer;
     private int _flushLen;
     private int _flushOffset;
+    private readonly byte[] _inflateBuffer;
+    private readonly IPacketEncoding _encoding = new ZLibPacketEncoding();
     
     public string Ip { get; }
     
@@ -43,39 +47,30 @@ public class Session : ISession
         _receiveEvent.Completed += HandleOperationCompleted;
         _receiveBuffer = ArrayPool<byte>.Shared.Rent(4096);
         _sendEvent.Completed += HandleOperationCompleted;
-        _sendBuffer = ArrayPool<byte>.Shared.Rent(204800);
-        _flushBuffer = ArrayPool<byte>.Shared.Rent(204800);
+        _sendBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+        _sendBufferStream = new PacketOutputStream(_sendBuffer);
+        _flushBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+        _inflateBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
         _handler.OnConnected(this);
         
         TryReceive();
     }
 
-    public void Send(ReadOnlySpan<byte> bytes)
+    public void Send(IPacket packet)
     {
         if (!_connected)
         {
             return;
         }
 
-        if (bytes.IsEmpty)
-        {
-            return;
-        }
-
         lock (_sendLock)
         {
-            var bytesLeft = _sendBuffer.Length - _sendBufferOffset;
-            if (bytesLeft < bytes.Length)
-            {
-                HandleError(SocketError.NoBufferSpaceAvailable);
-
-                return;
-            }
+            _sendBufferStream.WriteGChar(packet.Id);
             
-            bytes.CopyTo(_sendBuffer.AsSpan(_sendBufferOffset));
+            packet.WriteTo(_sendBufferStream);
 
-            _sendBufferOffset += bytes.Length;
-
+            _sendBufferStream.WriteByte(0x0A);
+            
             if (_sending)
             {
                 return;
@@ -86,40 +81,7 @@ public class Session : ISession
             TrySend();
         }
     }
-    
-    private void Send(string str)
-    {
-        Send(Encoding.ASCII.GetBytes(str));
-    }
-    
-    
-    
-    
-    
 
-    /// <summary>
-    /// Disconnects the player from the server.
-    /// </summary>
-    /// <param name="message">The message that is shown to the player.</param>
-    private void Disconnect(string message)
-    {
-        if (!string.IsNullOrWhiteSpace(message))
-        {
-            Send(Convert.ToString((char)(32 + Protocols.ServerList.Disconnect)) + message + Convert.ToString((char)10));
-        }
-
-        Disconnect();
-    }
-
-
-
-
-
-
-    
-    
-    
-    
     private void TryReceive()
     {
         if (_receiving || !_connected)
@@ -152,28 +114,6 @@ public class Session : ISession
         }
     }
 
-    private void FlushSendBuffer()
-    {
-        if (_sendBufferOffset == 0)
-        {
-            return;
-        }
-        
-        var deflater = new Deflater(Deflater.BEST_COMPRESSION, false);
-
-        deflater.SetInput(_sendBuffer, 0, _sendBufferOffset);
-        deflater.Finish();
-        
-        var len = deflater.Deflate(_flushBuffer, 2, _flushBuffer.Length - 2);
-
-        _flushBuffer[0] = (byte)((len >> 8) & 0xFF);
-        _flushBuffer[1] = (byte)(len & 0xFF);
-        
-        _sendBufferOffset = 0;
-        _flushOffset = 0;
-        _flushLen = 2 + len;
-    }
-    
     private void TrySend()
     {
         if (!_connected)
@@ -194,8 +134,10 @@ public class Session : ISession
                     return;
                 }
                 
-                FlushSendBuffer();
-
+                _flushOffset = 0;
+                
+                _sendBufferStream.Flush(_encoding, _flushBuffer, out _flushLen);
+                
                 if (_flushLen == 0)
                 {
                     _sending = false;
@@ -210,7 +152,7 @@ public class Session : ISession
 
                 if (!_socket.SendAsync(_sendEvent))
                 {
-                    process = ProcessSend(_sendEvent);
+                    process = HandleSend(_sendEvent);
                 }
             }
             catch (ObjectDisposedException)
@@ -244,7 +186,7 @@ public class Session : ISession
             var inflater = new Inflater();
 
             inflater.SetInput(_receiveBuffer, pos, len);
-            inflater.Inflate(_inflateBuffer, 0, 204800);
+            inflater.Inflate(_inflateBuffer, 0, BufferSize);
 
             var messages = Encoding.UTF8.GetString(_inflateBuffer, 0, (int)inflater.TotalOut).Split((char)10);
 
@@ -304,7 +246,7 @@ public class Session : ISession
         return false;
     }
 
-    private bool ProcessSend(SocketAsyncEventArgs e)
+    private bool HandleSend(SocketAsyncEventArgs e)
     {
         if (!_connected)
         {
@@ -351,7 +293,7 @@ public class Session : ISession
                 break;
 
             case SocketAsyncOperation.Send:
-                if (ProcessSend(e))
+                if (HandleSend(e))
                 {
                     TrySend();
                 }
@@ -409,7 +351,10 @@ public class Session : ISession
             case 0:
                 if (messageData != "newmain")
                 {
-                    Disconnect("You are using a unsupported client.");
+                    Send(new DisconnectPacket
+                    {
+                        Message = "You are using a unsupported client."
+                    });
                 }
 
                 break;
@@ -439,7 +384,10 @@ public class Session : ISession
                     {
                         motd = motd.Replace("%{AccountName}", accountName);
 
-                        this.ShowMessage(motd);
+                        Send(new MotdPacket
+                        {
+                            Message = motd
+                        });
                     }
 
                     /* Check if the 'Pay by Credit Card' button should be shown. */
@@ -448,12 +396,15 @@ public class Session : ISession
                         var url = _settings.PayByCreditCardUrl.Trim();
                         if (url.Length > 0)
                         {
-                            this.EnablePayByCreditCard(url);
+                            Send(new PayByCreditCardPacket
+                            {
+                                Url = url
+                            });
                         }
                     }
 
                     /* Check if the 'Pay by Phone' button should be shown. */
-                    if (_settings.PayByPhone) this.EnablePayByPhone();
+                    if (_settings.PayByPhone) Send(new PayByPhonePacket());
 
                     /* Check if the 'Show More' button should be shown. */
                     if (_settings.ShowMore)
@@ -461,17 +412,26 @@ public class Session : ISession
                         var url = _settings.ShowMoreUrl.Trim();
                         if (url.Length > 0)
                         {
-                            this.EnableShowMore(url);
+                            Send(new ShowMorePacket
+                            {
+                                Url = url
+                            });
                         }
                     }
 
-                    this.SendServerList(_database.GetServers());
+                    Send(new ServerListPacket
+                    {
+                        Data = _database.GetServers()
+                    });
                 }
                 else
                 {
                     Log.Error("Login failed for '{ClientIp}'", Ip);
 
-                    Disconnect("Invalid account name or password.");
+                    Send(new DisconnectPacket
+                    {
+                        Message = "Invalid account name or password."
+                    });
                 }
 
                 break;

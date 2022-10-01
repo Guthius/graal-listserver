@@ -1,4 +1,4 @@
-namespace Listserver.Database;
+namespace OpenGraal.Server.Database;
 
 public interface IDatabase
 {

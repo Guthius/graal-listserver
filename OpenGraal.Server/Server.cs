@@ -1,18 +1,19 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using Listserver.Database;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using OpenGraal.Net;
+using OpenGraal.Server.Database;
 using Serilog;
 
-namespace Listserver;
+namespace OpenGraal.Server;
 
 public class Server : BackgroundService, ISessionHandler
 {
     private readonly IDatabase _database;
     private readonly ServerSettings _options;
-    private readonly List<Session> _sessions = new();
+    private readonly List<ISession> _sessions = new();
     private Socket? _socket;
 
     public Server(IDatabase database, IOptions<ServerSettings> options)
@@ -54,12 +55,12 @@ public class Server : BackgroundService, ISessionHandler
         Log.Information("Server has stopped");
     }
 
-    public void OnConnected(Session session)
+    public void OnConnected(ISession session)
     {
         Log.Information("'{ClientIp}' has connected", session.Ip);
     }
 
-    public void OnDisconnected(Session session)
+    public void OnDisconnected(ISession session)
     {
         Log.Information("'{ClientIp}' has disconnected", session.Ip);
 
@@ -69,7 +70,7 @@ public class Server : BackgroundService, ISessionHandler
         }
     }
 
-    public void OnSocketError(Session session, SocketError socketError)
+    public void OnSocketError(ISession session, SocketError socketError)
     {
         Log.Information("'{ClientIp}' socket error {ErrorCode}", session.Ip, socketError);
     }
