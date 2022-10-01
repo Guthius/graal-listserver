@@ -8,17 +8,13 @@ using Serilog;
 
 namespace Listserver;
 
-public class Server : BackgroundService
+public class Server : BackgroundService, ISessionHandler
 {
     private readonly IDatabase _database;
     private readonly ServerSettings _options;
+    private readonly List<Session> _sessions = new();
     private Socket? _socket;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Server"/> class.
-    /// </summary>
-    /// <param name="database">The database.</param>
-    /// <param name="options">The server options.</param>
     public Server(IDatabase database, IOptions<ServerSettings> options)
     {
         _database = database;
@@ -36,20 +32,45 @@ public class Server : BackgroundService
 
         return base.StartAsync(cancellationToken);
     }
-
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         Debug.Assert(_socket != null, nameof(_socket) + " != null");
-        
+
         while (!stoppingToken.IsCancellationRequested)
         {
             var client = await _socket.AcceptAsync(stoppingToken);
 
-            _ = new Player(client, _database, _options).Run(stoppingToken);
+            var session = new Session(this, client, _database, _options);
+
+            lock (_sessions)
+            {
+                _sessions.Add(session);
+            }
 
             await Task.Delay(10, stoppingToken);
         }
 
         Log.Information("Server has stopped");
+    }
+
+    public void OnConnected(Session session)
+    {
+        Log.Information("'{ClientIp}' has connected", session.Ip);
+    }
+
+    public void OnDisconnected(Session session)
+    {
+        Log.Information("'{ClientIp}' has disconnected", session.Ip);
+
+        lock (_sessions)
+        {
+            _sessions.Remove(session);
+        }
+    }
+
+    public void OnSocketError(Session session, SocketError socketError)
+    {
+        Log.Information("'{ClientIp}' socket error {ErrorCode}", session.Ip, socketError);
     }
 }
