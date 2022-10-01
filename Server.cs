@@ -39,15 +39,11 @@ public class Server : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        Debug.Assert(_socket != null, nameof(_socket) + " != null");
+        
         while (!stoppingToken.IsCancellationRequested)
         {
-            Debug.Assert(_socket != null, nameof(_socket) + " != null");
-            
-            var client =
-                await Task.Factory.FromAsync(
-                    _socket.BeginAccept,
-                    _socket.EndAccept,
-                    null);
+            var client = await _socket.AcceptAsync(stoppingToken);
 
             _ = new Player(client, _database, _options).Run(stoppingToken);
 

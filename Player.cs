@@ -164,12 +164,7 @@ public class Player
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var bytesReceived =
-                await Task.Factory.FromAsync(
-                    (cb, s) => _socket.BeginReceive(_receiveBuffer, 0, _receiveBuffer.Length, 0, cb, s),
-                    _socket.EndReceive,
-                    null);
-
+            var bytesReceived = await _socket.ReceiveAsync(_receiveBuffer.AsMemory(), SocketFlags.None, stoppingToken);
             if (bytesReceived == 0)
             {
                 break;
