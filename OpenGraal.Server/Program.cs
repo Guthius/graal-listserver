@@ -7,14 +7,13 @@ using OpenGraal.Server.Services.Lobby;
 using Serilog;
 using Serilog.Events;
 
-Console.Title = "Graal 2.1.5 Server";
+Console.Title = "OpenGraal Server";
 
 Console.ForegroundColor = ConsoleColor.Green;
-Console.WriteLine(" --------------------");
-Console.WriteLine("  Graal 2.1.5 Server ");
-Console.WriteLine(" --------------------");
-Console.WriteLine();
-Console.ForegroundColor = ConsoleColor.Gray;
+Console.WriteLine(" ------------------");
+Console.WriteLine("  OpenGraal Server ");
+Console.WriteLine(" ------------------");
+Console.ResetColor();
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -41,7 +40,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Error(ex, "Failed to start server");
+    Log.Fatal(ex, "Failed to start server");
 }
 
 Console.WriteLine();
