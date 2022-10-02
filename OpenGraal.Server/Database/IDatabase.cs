@@ -1,7 +1,7 @@
 namespace OpenGraal.Server.Database;
 
-public interface IDatabase
+internal interface IDatabase
 {
-    string GetServers();
+    List<ServerInfo> GetServers();
     bool AccountExists(string accountName, string password);
 }

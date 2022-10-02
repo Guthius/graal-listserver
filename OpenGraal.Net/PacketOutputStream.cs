@@ -1,9 +1,6 @@
-using System.Text;
-using OpenGraal.Net;
+namespace OpenGraal.Net;
 
-namespace OpenGraal.Server;
-
-public class PacketOutputStream : IPacketOutputStream
+public sealed class PacketOutputStream : IPacketOutputStream
 {
     private readonly byte[] _buffer;
     private int _pos;
@@ -28,27 +25,22 @@ public class PacketOutputStream : IPacketOutputStream
         _pos = 0;
     }
 
-    public void WriteByte(byte value)
+    public void WriteByte(int value)
     {
-        _buffer[_pos] = value;
+        _buffer[_pos] = (byte)value;
         _pos++;
     }
 
-    public void WriteBytes(ReadOnlySpan<byte> bytes)
-    {
-        bytes.CopyTo(_buffer.AsSpan(_pos));
-    }
-
-    public void WriteGChar(byte value)
+    public void WriteGChar(int value)
     {
         _buffer[_pos] = (byte)(value + 32);
         _pos++;
     }
 
-    public void WriteString(string str)
+    public void WriteStr(string str)
     {
         var len = str.Length;
-        Encoding.UTF8.GetBytes(str, 0, len, _buffer, _pos);
+        System.Text.Encoding.UTF8.GetBytes(str, 0, len, _buffer, _pos);
         _pos += len;
     }
 
@@ -57,6 +49,6 @@ public class PacketOutputStream : IPacketOutputStream
         // TODO: Truncate string if needed...
 
         WriteGChar((byte)str.Length);
-        WriteString(str);
+        WriteStr(str);
     }
 }

@@ -1,8 +1,9 @@
 namespace OpenGraal.Net;
 
-public interface ISession
+public interface ISession : IDisposable
 {
-    string Ip { get; }
-    void Send(IPacket packet);
+    int Id { get; }
+    string Address { get; }
+    void Send(IServerPacket packet);
     void Disconnect();
 }

@@ -1,31 +1,14 @@
-using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
 namespace OpenGraal.Server.Database;
 
-public class JsonDatabase : IDatabase
+internal sealed class JsonDatabase : IDatabase
 {
     private readonly string _path;
     private readonly string _accountsPath;
-
-    /// <summary>
-    /// Represents a server.
-    /// </summary>
-    private class Server
-    {
-        public bool Premium { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Language { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Url { get; set; } = string.Empty;
-        public string Version { get; set; } = string.Empty;
-        public int Players { get; set; }
-        public string Ip { get; set; } = string.Empty;
-        public int Port { get; set; }
-    }
-
+    
     /// <summary>
     /// Represents an account.
     /// </summary>
@@ -44,7 +27,9 @@ public class JsonDatabase : IDatabase
         _path = configuration["DataPath"];
         if (string.IsNullOrEmpty(_path))
         {
-            throw new Exception("No path for the database was specified. please configure 'DataPath' and restart.");
+            throw new Exception(
+                "No path for the database was specified. " +
+                "Please configure 'DataPath' and restart.");
         }
 
         try
@@ -69,51 +54,22 @@ public class JsonDatabase : IDatabase
     }
 
     /// <summary>
-    /// Pack a string using graal encoding.
-    /// </summary>
-    /// <param name="data">The data to encode.</param>
-    /// <returns></returns>
-    private static string Pack(string data) => Convert.ToString((char)(data.Length + 32)) + data;
-
-    /// <summary>
     /// Gets the list of servers as a single string.
     /// </summary>
     /// <returns></returns>
-    public string GetServers()
+    public List<ServerInfo> GetServers()
     {
         var serversPath = Path.Combine(_path, "servers.json");
         if (!File.Exists(serversPath))
         {
-            return Convert.ToString((char)32);
+            return new List<ServerInfo>();
         }
 
         var json = File.ReadAllText(serversPath);
 
-        var servers = JsonSerializer.Deserialize<List<Server>>(json);
-        var serverList = "";
+        var servers = JsonSerializer.Deserialize<List<ServerInfo>>(json);
 
-        Debug.Assert(servers != null, nameof(servers) + " != null");
-            
-        foreach (var server in servers)
-        {
-            var name = server.Name;
-            if (server.Premium)
-            {
-                name = "P " + name;
-            }
-
-            serverList += (char)(32 + 8);
-            serverList += Pack(name);
-            serverList += Pack(server.Language);
-            serverList += Pack(server.Description);
-            serverList += Pack(server.Url);
-            serverList += Pack(server.Version);
-            serverList += Pack(server.Players.ToString());
-            serverList += Pack(server.Ip);
-            serverList += Pack(server.Port.ToString());
-        }
-
-        return Convert.ToString((char)(servers.Count + 32)) + serverList;
+        return servers ?? new List<ServerInfo>();
     }
 
     /// <summary>

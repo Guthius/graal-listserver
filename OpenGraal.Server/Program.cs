@@ -1,47 +1,41 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using OpenGraal.Net;
 using OpenGraal.Server;
 using OpenGraal.Server.Database;
 using Serilog;
 using Serilog.Events;
-using Serilog.Sinks.SystemConsole.Themes;
 
-Console.Title = "Graal 2.1.5 List Server";
+Console.Title = "Graal 2.1.5 Server";
 
 Console.ForegroundColor = ConsoleColor.Green;
-Console.WriteLine(" -------------------------");
-Console.WriteLine("  Graal 2.1.5 List Server ");
-Console.WriteLine(" -------------------------\n");
+Console.WriteLine(" --------------------");
+Console.WriteLine("  Graal 2.1.5 Server ");
+Console.WriteLine(" --------------------");
+Console.WriteLine();
 Console.ForegroundColor = ConsoleColor.Gray;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .Enrich.FromLogContext()
-    .WriteTo.Console(theme: AnsiConsoleTheme.Code)
+    .WriteTo.Console()
     .CreateLogger();
-
-IHostBuilder CreateHostBuilder(string[] args)
-    => Host.CreateDefaultBuilder(args)
-        .ConfigureServices((context, services) =>
-        {
-            services.AddLogging(options =>
-            {
-                options.ClearProviders();
-                options.AddSerilog();
-            });
-
-            services.Configure<ServerSettings>(context.Configuration);
-            services.AddSingleton<IDatabase, JsonDatabase>();
-            services.AddHostedService<Server>();
-        });
 
 Log.Information("Starting server...");
 
 try
 {
-    await CreateHostBuilder(args).RunConsoleAsync();
+    await Host.CreateDefaultBuilder(args)
+        .ConfigureServices((_, services) =>
+        {
+            services.AddSingleton<IDatabase, JsonDatabase>();
+            services.AddScoped<LobbyProtocol>();
+            services.AddSingleton<SessionManager<LobbyProtocol>>();
+            services.AddHostedService<Server<LobbyProtocol>>();
+        })
+        .UseSerilog()
+        .RunConsoleAsync();
 }
 catch (Exception ex)
 {
