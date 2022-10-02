@@ -2,7 +2,7 @@
 
 namespace OpenGraal.Server.Protocols.Lobby.Packets;
 
-public class PayByCreditCardPacket : IServerPacket
+internal sealed class PayByCreditCardPacket : IServerPacket
 {
     private const int Id = 5;
     

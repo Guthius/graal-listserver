@@ -2,7 +2,7 @@
 
 namespace OpenGraal.Server.Protocols.Lobby.Packets;
 
-public sealed class DisconnectPacket : IServerPacket
+internal sealed class DisconnectPacket : IServerPacket
 {
     private const int Id = 4;
     

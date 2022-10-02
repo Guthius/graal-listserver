@@ -2,7 +2,7 @@
 
 namespace OpenGraal.Server.Protocols.Lobby.Packets;
 
-public class MotdPacket : IServerPacket
+internal sealed class MotdPacket : IServerPacket
 {
     private const int Id = 2;
     

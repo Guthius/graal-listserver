@@ -2,7 +2,7 @@
 
 namespace OpenGraal.Server.Protocols.Lobby.Packets;
 
-public class ShowMorePacket : IServerPacket
+internal sealed class ShowMorePacket : IServerPacket
 {
     private const int Id = 3;
     
