@@ -1,6 +1,6 @@
 ﻿using OpenGraal.Net;
 
-namespace OpenGraal.Server.Protocols.Lobby;
+namespace OpenGraal.Server.Protocols.Lobby.Packets;
 
 public class ShowMorePacket : IServerPacket
 {

@@ -1,25 +1,27 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenGraal.Net;
-using OpenGraal.Server.Database;
-using OpenGraal.Server.Protocols.Lobby;
+using OpenGraal.Server.Protocols.Lobby.Packets;
+using OpenGraal.Server.Services.Accounts;
+using OpenGraal.Server.Services.Lobby;
 
-namespace OpenGraal.Server;
+namespace OpenGraal.Server.Protocols.Lobby;
 
 internal sealed class LobbyProtocol : Protocol
 {
-    private readonly IDatabase _database;
     private readonly IConfiguration _configuration;
     private readonly ILogger<LobbyProtocol> _logger;
-
+    private readonly LobbyManager _lobbyManager;
+    private readonly AccountService _accountService;
     private string _accountName = string.Empty;
 
-    public LobbyProtocol(IDatabase database, IConfiguration configuration, ILogger<LobbyProtocol> logger) 
-        : base(logger)
+    public LobbyProtocol(IConfiguration configuration, ILogger<LobbyProtocol> logger, LobbyManager lobbyManager,
+        AccountService accountService) : base(logger)
     {
-        _database = database;
         _configuration = configuration;
         _logger = logger;
+        _lobbyManager = lobbyManager;
+        _accountService = accountService;
 
         Bind<IdentifyPacket>(0, OnIdentify);
         Bind<LoginPacket>(1, OnLogin);
@@ -38,7 +40,7 @@ internal sealed class LobbyProtocol : Protocol
 
     private void OnLogin(ISession session, LoginPacket packet)
     {
-        if (!_database.AccountExists(packet.AccountName, packet.Password))
+        if (!_accountService.AccountExists(packet.AccountName, packet.Password))
         {
             _logger.LogError("[{SessionId}] Login failed for {Address}",
                 session.Id, session.Address);
@@ -105,6 +107,9 @@ internal sealed class LobbyProtocol : Protocol
             }
         }
 
-        session.Send(new ServerListPacket(_database.GetServers()));
+        session.Send(new ServerListPacket
+        {
+            ServerInfos = _lobbyManager.GetServerInfos()
+        });
     }
 }

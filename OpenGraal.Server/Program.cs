@@ -1,8 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenGraal.Net;
-using OpenGraal.Server;
-using OpenGraal.Server.Database;
+using OpenGraal.Server.Protocols.Lobby;
+using OpenGraal.Server.Services.Accounts;
+using OpenGraal.Server.Services.Lobby;
 using Serilog;
 using Serilog.Events;
 
@@ -29,10 +30,11 @@ try
     await Host.CreateDefaultBuilder(args)
         .ConfigureServices((_, services) =>
         {
-            services.AddSingleton<IDatabase, JsonDatabase>();
+            services.AddSingleton<AccountService>();
+            services.AddSingleton<LobbyManager>();
             services.AddScoped<LobbyProtocol>();
             services.AddSingleton<SessionManager<LobbyProtocol>>();
-            services.AddHostedService<Server<LobbyProtocol>>();
+            services.AddHostedService<SessionHost<LobbyProtocol>>();
         })
         .UseSerilog()
         .RunConsoleAsync();

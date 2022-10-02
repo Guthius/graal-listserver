@@ -30,7 +30,7 @@ public sealed class Session : ISession
     private readonly byte[] _deflateBuffer;
     private readonly IPacketEncoding _encoding = new ZLibPacketEncoding();
     private bool _disposed;
-
+    
     public int Id { get; }
     public string Address { get; }
 
@@ -52,7 +52,7 @@ public sealed class Session : ISession
         _inflateBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
         _deflateBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
         _sessionHandler.OnConnected(this);
-
+        
         TryReceive();
     }
 

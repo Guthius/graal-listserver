@@ -1,25 +1,20 @@
 ﻿using OpenGraal.Net;
-using OpenGraal.Server.Database;
+using OpenGraal.Server.Services.Lobby;
 
-namespace OpenGraal.Server.Protocols.Lobby;
+namespace OpenGraal.Server.Protocols.Lobby.Packets;
 
 internal sealed class ServerListPacket : IServerPacket
 {
     private const int Id = 0;
     
-    private readonly List<ServerInfo> _serverInfos;
-    
-    public ServerListPacket(List<ServerInfo> serverInfos)
-    {
-        _serverInfos = serverInfos;
-    }
+    public List<ServerInfo> ServerInfos { get; set; } = new();
     
     public void WriteTo(IPacketOutputStream output)
     {
         output.WriteGChar(Id);
-        output.WriteGChar(_serverInfos.Count);
+        output.WriteGChar(ServerInfos.Count);
 
-        foreach (var serverInfo in _serverInfos)
+        foreach (var serverInfo in ServerInfos)
         {
             
             var name = serverInfo.Name;

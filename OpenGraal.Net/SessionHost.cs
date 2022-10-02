@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Configuration;
@@ -7,15 +6,15 @@ using Microsoft.Extensions.Logging;
 
 namespace OpenGraal.Net;
 
-public sealed class Server<TProtocol> : BackgroundService, ISessionHandler where TProtocol : IProtocol
+public sealed class SessionHost<TProtocol> : BackgroundService, ISessionHandler where TProtocol : IProtocol
 {
     private readonly SessionManager<TProtocol> _sessionManager;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<Server<TProtocol>> _logger;
+    private readonly ILogger<SessionHost<TProtocol>> _logger;
     private Socket? _socket;
 
-    public Server(SessionManager<TProtocol> sessionManager, IConfiguration configuration,
-        ILogger<Server<TProtocol>> logger)
+    public SessionHost(SessionManager<TProtocol> sessionManager, IConfiguration configuration,
+        ILogger<SessionHost<TProtocol>> logger)
     {
         _sessionManager = sessionManager;
         _configuration = configuration;
@@ -30,15 +29,18 @@ public sealed class Server<TProtocol> : BackgroundService, ISessionHandler where
         _socket.Bind(new IPEndPoint(IPAddress.Any, port));
         _socket.Listen((int)SocketOptionName.MaxConnections);
 
-        _logger.LogInformation("The server is running on port {Port}", port);
-        _logger.LogInformation("Listening for connections...");
+        _logger.LogInformation("Session host for {Protocol} started on port {Port}",
+            typeof(TProtocol).Name, port);
 
         return base.StartAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Debug.Assert(_socket != null, nameof(_socket) + " != null");
+        if (_socket is null)
+        {
+            return;
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
