@@ -1,6 +1,6 @@
 ﻿using JetBrains.Annotations;
 
-namespace OpenGraal.Server.Services.Lobby;
+namespace OpenGraal.Server.Lobby;
 
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
 internal sealed class ServerInfo

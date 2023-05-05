@@ -1,8 +1,8 @@
 ﻿using OpenGraal.Net;
 
-namespace OpenGraal.Server.Protocols.Lobby.Packets;
+namespace OpenGraal.Server.Lobby.Packets;
 
-internal sealed class PayByPhonePacket : IServerPacket
+internal sealed record PayByPhonePacket : IServerPacket
 {
     private const int Id = 6;
 

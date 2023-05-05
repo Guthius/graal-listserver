@@ -1,6 +1,6 @@
 ﻿using OpenGraal.Net;
 
-namespace OpenGraal.Server.Protocols.Lobby.Packets;
+namespace OpenGraal.Server.Lobby.Packets;
 
 internal sealed record IdentifyPacket(
         string ClientVersion) 

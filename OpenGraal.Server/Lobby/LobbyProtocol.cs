@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenGraal.Net;
-using OpenGraal.Server.Protocols.Lobby.Packets;
+using OpenGraal.Server.Lobby.Packets;
 using OpenGraal.Server.Services.Accounts;
-using OpenGraal.Server.Services.Lobby;
 
-namespace OpenGraal.Server.Protocols.Lobby;
+namespace OpenGraal.Server.Lobby;
 
 internal sealed class LobbyProtocol : Protocol
 {
@@ -31,10 +30,7 @@ internal sealed class LobbyProtocol : Protocol
     {
         if (packet.ClientVersion != "newmain")
         {
-            session.Send(new DisconnectPacket
-            {
-                Message = "You are using a unsupported client."
-            });
+            session.Send(new DisconnectPacket("You are using a unsupported client."));
         }
     }
 
@@ -45,10 +41,7 @@ internal sealed class LobbyProtocol : Protocol
             _logger.LogError("[{SessionId}] Login failed for {Address}",
                 session.Id, session.Address);
 
-            session.Send(new DisconnectPacket
-            {
-                Message = "Invalid account name or password."
-            });
+            session.Send(new DisconnectPacket("Invalid account name or password."));
 
             return;
         }
@@ -69,10 +62,7 @@ internal sealed class LobbyProtocol : Protocol
         {
             motd = motd.Replace("%{AccountName}", _accountName);
 
-            session.Send(new MotdPacket
-            {
-                Message = motd
-            });
+            session.Send(new MotdPacket(motd));
         }
 
         /* Check if the 'Pay by Credit Card' button should be shown. */
@@ -81,10 +71,7 @@ internal sealed class LobbyProtocol : Protocol
             var url = _configuration["PayByCreditCardUrl"].Trim();
             if (url.Length > 0)
             {
-                session.Send(new PayByCreditCardPacket
-                {
-                    Url = url
-                });
+                session.Send(new PayByCreditCardPacket(url));
             }
         }
 
@@ -100,16 +87,12 @@ internal sealed class LobbyProtocol : Protocol
             var url = _configuration["ShowMoreUrl"].Trim();
             if (url.Length > 0)
             {
-                session.Send(new ShowMorePacket
-                {
-                    Url = url
-                });
+                session.Send(new ShowMorePacket(url));
             }
         }
 
-        session.Send(new ServerListPacket
-        {
-            ServerInfos = _lobbyManager.GetServerInfos()
-        });
+        var serverList = _lobbyManager.GetServerList();
+        
+        session.Send(new ServerListPacket(serverList));
     }
 }

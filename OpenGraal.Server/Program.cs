@@ -1,9 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenGraal.Net;
-using OpenGraal.Server.Protocols.Lobby;
+using OpenGraal.Server.Lobby;
 using OpenGraal.Server.Services.Accounts;
-using OpenGraal.Server.Services.Lobby;
 using Serilog;
 using Serilog.Events;
 

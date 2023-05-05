@@ -1,13 +1,10 @@
 ﻿using OpenGraal.Net;
-using OpenGraal.Server.Services.Lobby;
 
-namespace OpenGraal.Server.Protocols.Lobby.Packets;
+namespace OpenGraal.Server.Lobby.Packets;
 
-internal sealed class ServerListPacket : IServerPacket
+internal sealed record ServerListPacket(List<ServerInfo> ServerInfos) : IServerPacket
 {
     private const int Id = 0;
-    
-    public List<ServerInfo> ServerInfos { get; set; } = new();
     
     public void WriteTo(IPacketOutputStream output)
     {

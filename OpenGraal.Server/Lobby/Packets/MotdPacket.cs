@@ -1,13 +1,11 @@
 ﻿using OpenGraal.Net;
 
-namespace OpenGraal.Server.Protocols.Lobby.Packets;
+namespace OpenGraal.Server.Lobby.Packets;
 
-internal sealed class MotdPacket : IServerPacket
+internal sealed record MotdPacket(string Message) : IServerPacket
 {
     private const int Id = 2;
     
-    public string Message { get; set; } = string.Empty;
-
     public void WriteTo(IPacketOutputStream output)
     {
         output.WriteGChar(Id);
