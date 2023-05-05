@@ -2,14 +2,15 @@
 
 namespace OpenGraal.Server.Protocols.Lobby.Packets;
 
-internal sealed class LoginPacket : IClientPacket
+internal sealed record LoginPacket(
+        string AccountName,
+        string Password) 
+    : IClientPacket<LoginPacket>
 {
-    public string AccountName { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-
-    public void ReadFrom(IPacketInputStream input)
+    public static LoginPacket ReadFrom(IPacketInputStream input)
     {
-        AccountName = input.ReadNStr();
-        Password = input.ReadNStr();
+        return new LoginPacket(
+            input.ReadNStr(), 
+            input.ReadNStr());
     }
 }

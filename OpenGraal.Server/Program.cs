@@ -42,7 +42,3 @@ catch (Exception ex)
 {
     Log.Fatal(ex, "Failed to start server");
 }
-
-Console.WriteLine();
-Console.WriteLine("Press ANY key to exit");
-Console.ReadKey();

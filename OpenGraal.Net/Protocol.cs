@@ -13,27 +13,18 @@ public abstract class Protocol : IProtocol
     }
 
     protected void Bind<TPacket>(byte command, Action<ISession, TPacket> action)
-        where TPacket : IClientPacket, new()
+        where TPacket : IClientPacket<TPacket>
     {
         _actions[command] = (session, bytes) =>
         {
-            var packet = ParsePacket<TPacket>(bytes);
+            var stream = new PacketInputStream(bytes);
+            
+            var packet = TPacket.ReadFrom(stream);
 
             action(session, packet);
         };
     }
-
-    private static TPacket ParsePacket<TPacket>(ReadOnlyMemory<byte> bytes) where TPacket : IClientPacket, new()
-    {
-        var stream = new PacketInputStream(bytes);
-
-        var packet = new TPacket();
-
-        packet.ReadFrom(stream);
-
-        return packet;
-    }
-
+    
     public void Handle(ISession session, ReadOnlyMemory<byte> bytes)
     {
         if (bytes.Length == 0)

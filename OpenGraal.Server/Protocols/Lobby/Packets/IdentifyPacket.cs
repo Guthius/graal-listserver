@@ -2,12 +2,13 @@
 
 namespace OpenGraal.Server.Protocols.Lobby.Packets;
 
-internal sealed class IdentifyPacket : IClientPacket
+internal sealed record IdentifyPacket(
+        string ClientVersion) 
+    : IClientPacket<IdentifyPacket>
 {
-    public string ClientVersion { get; set; } = string.Empty;
-
-    public void ReadFrom(IPacketInputStream input)
+    public static IdentifyPacket ReadFrom(IPacketInputStream input)
     {
-        ClientVersion = input.ReadStr();
+        return new IdentifyPacket(
+            input.ReadStr());
     }
 }
