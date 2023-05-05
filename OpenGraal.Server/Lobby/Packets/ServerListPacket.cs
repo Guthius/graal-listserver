@@ -1,4 +1,5 @@
 ﻿using OpenGraal.Net;
+using OpenGraal.Server.Lobby.Dtos;
 
 namespace OpenGraal.Server.Lobby.Packets;
 

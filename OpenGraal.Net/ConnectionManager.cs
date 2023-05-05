@@ -4,13 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace OpenGraal.Net;
 
-public sealed class SessionManager<TProtocol> where TProtocol : IProtocol
+public sealed class ConnectionManager<TProtocol> where TProtocol : IProtocol
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly Stack<int> _sessionIds = new();
     private readonly Dictionary<int, IServiceScope> _sessionScopes = new();
     
-    public SessionManager(IServiceProvider serviceProvider, IConfiguration configuration)
+    public ConnectionManager(IServiceProvider serviceProvider, IConfiguration configuration)
     {
         _serviceProvider = serviceProvider;
 
@@ -29,21 +29,19 @@ public sealed class SessionManager<TProtocol> where TProtocol : IProtocol
         }
     }
 
-    public Session? Create(ISessionHandler handler, Socket socket)
+    public void Create(IServiceEvents handler, Socket socket)
     {
         if (_sessionIds.Count == 0)
         {
-            return null;
+            return;
         }
 
         var id = _sessionIds.Pop();
         var scope = _serviceProvider.CreateScope();
         var protocol = scope.ServiceProvider.GetRequiredService<TProtocol>();
-        var session = new Session(id, handler, protocol, socket);
+        var session = new Connection(id, handler, protocol, socket);
 
         _sessionScopes[id] = scope;
-
-        return session;
     }
     
     public void Destroy(int sessionId)

@@ -31,8 +31,8 @@ try
             services.AddSingleton<AccountService>();
             services.AddSingleton<LobbyManager>();
             services.AddScoped<LobbyProtocol>();
-            services.AddSingleton<SessionManager<LobbyProtocol>>();
-            services.AddHostedService<SessionHost<LobbyProtocol>>();
+            services.AddSingleton(typeof(ConnectionManager<>));
+            services.AddHostedService<Service<LobbyProtocol>>();
         })
         .UseSerilog()
         .RunConsoleAsync();

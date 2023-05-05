@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using OpenGraal.Server.Lobby.Dtos;
 
 namespace OpenGraal.Server.Lobby;
 
@@ -13,7 +14,7 @@ internal sealed class LobbyManager
     public LobbyManager(ILogger<LobbyManager> logger, IConfiguration configuration)
     {
         _logger = logger;
-        _dataPath = configuration["DataPath"];
+        _dataPath = configuration["DataPath"] ?? "Data";
         
         LoadServerList();
     }
@@ -23,7 +24,7 @@ internal sealed class LobbyManager
         if (string.IsNullOrEmpty(_dataPath))
         {
             throw new Exception(
-                "Unable to load serverlist. " +
+                "Unable to load server list. " +
                 "Please configure 'DataPath' and restart.");
         }
         
@@ -49,7 +50,7 @@ internal sealed class LobbyManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load serverlist");
+            _logger.LogError(ex, "Failed to load server list");
         }
     }
     

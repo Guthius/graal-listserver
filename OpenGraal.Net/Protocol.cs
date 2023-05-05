@@ -5,14 +5,14 @@ namespace OpenGraal.Net;
 public abstract class Protocol : IProtocol
 {
     private readonly ILogger _logger;
-    private readonly Dictionary<byte, Action<ISession, ReadOnlyMemory<byte>>> _actions = new();
+    private readonly Dictionary<byte, Action<IConnection, ReadOnlyMemory<byte>>> _actions = new();
 
     protected Protocol(ILogger logger)
     {
         _logger = logger;
     }
 
-    protected void Bind<TPacket>(byte command, Action<ISession, TPacket> action)
+    protected void Bind<TPacket>(byte command, Action<IConnection, TPacket> action)
         where TPacket : IClientPacket<TPacket>
     {
         _actions[command] = (session, bytes) =>
@@ -25,7 +25,7 @@ public abstract class Protocol : IProtocol
         };
     }
     
-    public void Handle(ISession session, ReadOnlyMemory<byte> bytes)
+    public void Handle(IConnection connection, ReadOnlyMemory<byte> bytes)
     {
         if (bytes.Length == 0)
         {
@@ -36,11 +36,11 @@ public abstract class Protocol : IProtocol
         if (!_actions.TryGetValue(command, out var handler))
         {
             _logger.LogWarning("[{SessionId}] Received unhandled packet {Command} from '{Address}'", 
-                session.Id, command, session.Address);
+                connection.Id, command, connection.Address);
             
             return;
         }
 
-        handler(session, bytes);
+        handler(connection, bytes);
     }
 }

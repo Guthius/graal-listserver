@@ -1,6 +1,6 @@
 namespace OpenGraal.Net;
 
-public interface ISession : IDisposable
+public interface IConnection : IDisposable
 {
     int Id { get; }
     string Address { get; }

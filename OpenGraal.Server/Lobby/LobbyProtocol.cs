@@ -26,73 +26,75 @@ internal sealed class LobbyProtocol : Protocol
         Bind<LoginPacket>(1, OnLogin);
     }
 
-    private static void OnIdentify(ISession session, IdentifyPacket packet)
+    private static void OnIdentify(IConnection connection, IdentifyPacket packet)
     {
         if (packet.ClientVersion != "newmain")
         {
-            session.Send(new DisconnectPacket("You are using a unsupported client."));
+            connection.Send(new DisconnectPacket("You are using a unsupported client."));
         }
     }
 
-    private void OnLogin(ISession session, LoginPacket packet)
+    private void OnLogin(IConnection connection, LoginPacket packet)
     {
         if (!_accountService.AccountExists(packet.AccountName, packet.Password))
         {
-            _logger.LogError("[{SessionId}] Login failed for {Address}",
-                session.Id, session.Address);
+            _logger.LogDebug(
+                "[{SessionId}] Login failed for {Address}",
+                connection.Id, connection.Address);
 
-            session.Send(new DisconnectPacket("Invalid account name or password."));
+            connection.Send(new DisconnectPacket("Invalid account name or password."));
 
             return;
         }
 
         _accountName = packet.AccountName;
 
-        _logger.LogInformation("[{SessionId}] {Address} has logged in as {AccountName}",
-            session.Id, session.Address, _accountName);
+        _logger.LogDebug(
+            "[{SessionId}] {Address} has logged in as {AccountName}",
+            connection.Id, connection.Address, _accountName);
 
-        SendLogin(session);
+        SendLogin(connection);
     }
 
-    private void SendLogin(ISession session)
+    private void SendLogin(IConnection connection)
     {
         /* Get the message of the day. */
-        var motd = _configuration["Motd"];
+        var motd = _configuration["Motd"] ?? string.Empty;
         if (motd.Length > 0)
         {
             motd = motd.Replace("%{AccountName}", _accountName);
 
-            session.Send(new MotdPacket(motd));
+            connection.Send(new MotdPacket(motd));
         }
 
         /* Check if the 'Pay by Credit Card' button should be shown. */
         if (_configuration.GetValue<bool>("PayByCreditCard"))
         {
-            var url = _configuration["PayByCreditCardUrl"].Trim();
+            var url = (_configuration["PayByCreditCardUrl"] ?? "").Trim();
             if (url.Length > 0)
             {
-                session.Send(new PayByCreditCardPacket(url));
+                connection.Send(new PayByCreditCardPacket(url));
             }
         }
 
         /* Check if the 'Pay by Phone' button should be shown. */
         if (_configuration.GetValue<bool>("PayByPhone"))
         {
-            session.Send(new PayByPhonePacket());
+            connection.Send(new PayByPhonePacket());
         }
 
         /* Check if the 'Show More' button should be shown. */
         if (_configuration.GetValue<bool>("ShowMore"))
         {
-            var url = _configuration["ShowMoreUrl"].Trim();
+            var url = (_configuration["ShowMoreUrl"] ?? "").Trim();
             if (url.Length > 0)
             {
-                session.Send(new ShowMorePacket(url));
+                connection.Send(new ShowMorePacket(url));
             }
         }
 
         var serverList = _lobbyManager.GetServerList();
         
-        session.Send(new ServerListPacket(serverList));
+        connection.Send(new ServerListPacket(serverList));
     }
 }

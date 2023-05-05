@@ -2,7 +2,7 @@
 
 namespace OpenGraal.Net.Encoding;
 
-public class ZLibPacketEncoding : IPacketEncoding
+public sealed class ZLibPacketEncoding : IPacketEncoding
 {
     private readonly Inflater _inflater = new();
     private readonly Deflater _deflater = new(Deflater.BEST_COMPRESSION, false);

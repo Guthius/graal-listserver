@@ -5,13 +5,13 @@ using OpenGraal.Net.Encoding;
 
 namespace OpenGraal.Net;
 
-public sealed class Session : ISession
+public sealed class Connection : IConnection
 {
     private const int BufferSize = 204800;
     private const byte PacketDelimiter = 0x0A;
 
     private readonly Socket _socket;
-    private readonly ISessionHandler _sessionHandler;
+    private readonly IServiceEvents _events;
     private readonly IProtocol _protocol;
     private bool _connected;
     private readonly SocketAsyncEventArgs _receiveEvent = new();
@@ -34,12 +34,12 @@ public sealed class Session : ISession
     public int Id { get; }
     public string Address { get; }
 
-    public Session(int id, ISessionHandler sessionHandler, IProtocol protocol, Socket socket)
+    public Connection(int id, IServiceEvents events, IProtocol protocol, Socket socket)
     {
         Address = socket.RemoteEndPoint?.ToString() ?? string.Empty;
         Id = id;
         
-        _sessionHandler = sessionHandler;
+        _events = events;
         _protocol = protocol;
         _socket = socket;
         _connected = true;
@@ -51,7 +51,8 @@ public sealed class Session : ISession
         _flushBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
         _inflateBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
         _deflateBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-        _sessionHandler.OnConnected(this);
+        
+        _events.OnConnected(this);
         
         TryReceive();
     }
@@ -210,7 +211,7 @@ public sealed class Session : ISession
 
     private void HandleError(SocketError socketError)
     {
-        _sessionHandler.OnSocketError(this, socketError);
+        _events.OnSocketError(this, socketError);
 
         Disconnect();
     }
@@ -334,7 +335,7 @@ public sealed class Session : ISession
         }
 
         _connected = false;
-        _sessionHandler.OnDisconnected(this);
+        _events.OnDisconnected(this);
     }
     
     private void Dispose(bool disposing)
