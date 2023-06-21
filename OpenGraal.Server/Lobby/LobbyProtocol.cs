@@ -14,8 +14,12 @@ internal sealed class LobbyProtocol : Protocol
     private readonly AccountService _accountService;
     private string _accountName = string.Empty;
 
-    public LobbyProtocol(IConfiguration configuration, ILogger<LobbyProtocol> logger, LobbyManager lobbyManager,
-        AccountService accountService) : base(logger)
+    public LobbyProtocol(
+        IConfiguration configuration,
+        ILogger<LobbyProtocol> logger,
+        LobbyManager lobbyManager,
+        AccountService accountService)
+        : base(logger)
     {
         _configuration = configuration;
         _logger = logger;

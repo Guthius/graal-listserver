@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenGraal.Server", "OpenGra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenGraal.Net", "OpenGraal.Net\OpenGraal.Net.csproj", "{AA0F153E-7DB4-4F22-825C-26BD41309953}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenGraal.Data", "src\OpenGraal.Data\OpenGraal.Data.csproj", "{A7B5EBC8-56BB-4D91-8F20-FC52B0C39BA7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{AA0F153E-7DB4-4F22-825C-26BD41309953}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA0F153E-7DB4-4F22-825C-26BD41309953}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA0F153E-7DB4-4F22-825C-26BD41309953}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7B5EBC8-56BB-4D91-8F20-FC52B0C39BA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7B5EBC8-56BB-4D91-8F20-FC52B0C39BA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7B5EBC8-56BB-4D91-8F20-FC52B0C39BA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7B5EBC8-56BB-4D91-8F20-FC52B0C39BA7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

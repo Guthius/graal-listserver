@@ -1,8 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenGraal.Net;
+using OpenGraal.Server.Game;
 using OpenGraal.Server.Lobby;
 using OpenGraal.Server.Services.Accounts;
+using OpenGraal.Server.World;
 using Serilog;
 using Serilog.Events;
 
@@ -32,7 +34,10 @@ try
             services.AddSingleton<LobbyManager>();
             services.AddScoped<LobbyProtocol>();
             services.AddSingleton(typeof(ConnectionManager<>));
+            services.AddSingleton<IWorld, WorldService>();
+            services.AddHostedService<WorldService>();
             services.AddHostedService<Service<LobbyProtocol>>();
+            services.AddHostedService<Service<GameProtocol>>();
         })
         .UseSerilog()
         .RunConsoleAsync();
