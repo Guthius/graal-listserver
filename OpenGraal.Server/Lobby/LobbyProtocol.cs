@@ -10,20 +10,20 @@ internal sealed class LobbyProtocol : Protocol
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<LobbyProtocol> _logger;
-    private readonly LobbyManager _lobbyManager;
+    private readonly LobbyService _lobbyService;
     private readonly AccountService _accountService;
     private string _accountName = string.Empty;
 
     public LobbyProtocol(
         IConfiguration configuration,
         ILogger<LobbyProtocol> logger,
-        LobbyManager lobbyManager,
+        LobbyService lobbyService,
         AccountService accountService)
         : base(logger)
     {
         _configuration = configuration;
         _logger = logger;
-        _lobbyManager = lobbyManager;
+        _lobbyService = lobbyService;
         _accountService = accountService;
 
         Bind<IdentifyPacket>(0, OnIdentify);
@@ -97,7 +97,7 @@ internal sealed class LobbyProtocol : Protocol
             }
         }
 
-        var serverList = _lobbyManager.GetServerList();
+        var serverList = _lobbyService.GetServerList();
         
         connection.Send(new ServerListPacket(serverList));
     }

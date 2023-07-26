@@ -5,13 +5,13 @@ using OpenGraal.Server.Lobby.Dtos;
 
 namespace OpenGraal.Server.Lobby;
 
-internal sealed class LobbyManager
+internal sealed class LobbyService
 {
-    private readonly ILogger<LobbyManager> _logger;
+    private readonly ILogger<LobbyService> _logger;
     private readonly string _dataPath;
     private readonly List<ServerInfo> _serverInfos = new();
     
-    public LobbyManager(ILogger<LobbyManager> logger, IConfiguration configuration)
+    public LobbyService(ILogger<LobbyService> logger, IConfiguration configuration)
     {
         _logger = logger;
         _dataPath = configuration["DataPath"] ?? "Data";

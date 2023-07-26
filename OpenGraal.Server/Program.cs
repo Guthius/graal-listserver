@@ -31,12 +31,16 @@ try
         .ConfigureServices((_, services) =>
         {
             services.AddSingleton<AccountService>();
-            services.AddSingleton<LobbyManager>();
+            
+            services.AddSingleton<LobbyService>();
             services.AddScoped<LobbyProtocol>();
+            services.AddHostedService<Service<LobbyProtocol>>();
+            
             services.AddSingleton(typeof(ConnectionManager<>));
             services.AddSingleton<IWorld, WorldService>();
             services.AddHostedService<WorldService>();
-            services.AddHostedService<Service<LobbyProtocol>>();
+
+            services.AddScoped<GameProtocol>();
             services.AddHostedService<Service<GameProtocol>>();
         })
         .UseSerilog()

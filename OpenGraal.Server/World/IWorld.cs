@@ -5,5 +5,7 @@ namespace OpenGraal.Server.World;
 
 public interface IWorld
 {
-    Player? CreatePlayer(Connection connection, string accountName);
+    Player? CreatePlayer(IConnection connection, string accountName);
+
+    void SetLanguage(Player player, string language);
 }

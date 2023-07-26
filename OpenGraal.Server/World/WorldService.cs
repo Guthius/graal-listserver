@@ -9,6 +9,8 @@ namespace OpenGraal.Server.World;
 
 internal sealed class WorldService : BackgroundService, IWorld
 {
+    private const int MinTickRate = 10;
+    
     private readonly ILogger<WorldService> _logger;
     private readonly WorldOptions _options = new();
 
@@ -18,9 +20,9 @@ internal sealed class WorldService : BackgroundService, IWorld
 
         configuration.GetSection("World").Bind(_options);
         
-        if (_options.TickRate <= 10)
+        if (_options.TickRate <= MinTickRate)
         {
-            _options.TickRate = 10;
+            _options.TickRate = MinTickRate;
         }
     }
     
@@ -52,6 +54,9 @@ internal sealed class WorldService : BackgroundService, IWorld
 
     private static void Tick()
     {
+        // TODO: Process world events...
+        
+        // TODO: Exchange player property updates...
     }
 
     private bool IsAccountConnected(string accountName)
@@ -59,7 +64,7 @@ internal sealed class WorldService : BackgroundService, IWorld
         return false;
     }
     
-    public Player? CreatePlayer(Connection connection, string accountName)
+    public Player? CreatePlayer(IConnection connection, string accountName)
     {
         if (IsAccountConnected(accountName))
         {
@@ -67,5 +72,14 @@ internal sealed class WorldService : BackgroundService, IWorld
         }
         
         throw new NotImplementedException();
+    }
+
+    public void SetLanguage(Player player, string language)
+    {
+        player.Language = language;
+        
+        _logger.LogInformation("{AccountName} set language to {Language}",
+            player.AccountName, 
+            player.Language);
     }
 }

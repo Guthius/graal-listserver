@@ -25,7 +25,7 @@ public abstract class Protocol : IProtocol
         };
     }
     
-    public void Handle(IConnection connection, ReadOnlyMemory<byte> bytes)
+    public virtual void Handle(IConnection connection, Memory<byte> bytes)
     {
         if (bytes.Length == 0)
         {
