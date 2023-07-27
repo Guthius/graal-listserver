@@ -1,10 +1,9 @@
 ﻿namespace OpenGraal.Server.World.Levels;
 
-public sealed class LevelGroupManager
+internal sealed class LevelGroupManager
 {
     public LevelGroup GetLevelGroup(string levelName)
     {
         throw new NotImplementedException();
     }
-
 }

@@ -2,11 +2,11 @@
 
 namespace OpenGraal.Server.Game.Packets;
 
-public sealed record SignaturePacket : IServerPacket
+public sealed record SignaturePacket : IPacket
 {
-    public void WriteTo(IPacketOutputStream output)
+    public void WriteTo(Packet writer)
     {
-        output.WriteGChar(25);
-        output.WriteGChar(73);
+        writer.WriteGChar(25);
+        writer.WriteGChar(73);
     }
 }

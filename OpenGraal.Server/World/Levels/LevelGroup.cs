@@ -1,6 +1,6 @@
 ﻿namespace OpenGraal.Server.World.Levels;
 
-public sealed class LevelGroup
+internal sealed class LevelGroup
 {
     private readonly IWorld _world;
 

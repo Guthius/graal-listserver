@@ -2,11 +2,11 @@
 
 namespace OpenGraal.Server.Lobby.Packets;
 
-internal sealed record ShowMorePacket(string Url) : IServerPacket
+internal sealed record PayByCreditCard(string Url) : IPacket
 {
-    private const int Id = 3;
+    private const int Id = 5;
     
-    public void WriteTo(IPacketOutputStream output)
+    public void WriteTo(Packet output)
     {
         output.WriteGChar(Id);
         output.WriteStr(Url);

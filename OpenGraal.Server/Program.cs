@@ -17,7 +17,7 @@ Console.WriteLine(" ------------------");
 Console.ResetColor();
 
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
+    .MinimumLevel.Verbose()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .Enrich.FromLogContext()
     .WriteTo.Console()
@@ -27,24 +27,21 @@ Log.Information("Starting server...");
 
 try
 {
-    await Host.CreateDefaultBuilder(args)
-        .ConfigureServices((_, services) =>
-        {
-            services.AddSingleton<AccountService>();
+    var hostBuilder = Host.CreateApplicationBuilder(args);
+    
+    hostBuilder.Services.AddSingleton<AccountService>();
+    hostBuilder.Services.AddSingleton<LobbyService>();
+    hostBuilder.Services.AddSingleton<IWorld, WorldService>();
             
-            services.AddSingleton<LobbyService>();
-            services.AddScoped<LobbyProtocol>();
-            services.AddHostedService<Service<LobbyProtocol>>();
+    hostBuilder.Services.AddHostedService<WorldService>();
             
-            services.AddSingleton(typeof(ConnectionManager<>));
-            services.AddSingleton<IWorld, WorldService>();
-            services.AddHostedService<WorldService>();
+    hostBuilder.Services.AddGameService<LobbyUser, LobbyParser>();
+    hostBuilder.Services.AddGameService<GameUser, GameParser>();
+    hostBuilder.Services.AddSerilog();
 
-            services.AddScoped<GameProtocol>();
-            services.AddHostedService<Service<GameProtocol>>();
-        })
-        .UseSerilog()
-        .RunConsoleAsync();
+    var host = hostBuilder.Build();
+    
+    host.Run();
 }
 catch (Exception ex)
 {

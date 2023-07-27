@@ -1,6 +1,6 @@
 [
 	{
-		"Premium": true,
+		"Premium": false,
 		"Name": "My Server",
 		"Language": "English",
 		"Description": "Example server...",

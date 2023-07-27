@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenGraal.Net;
 using OpenGraal.Server.Lobby.Packets;
@@ -6,61 +6,49 @@ using OpenGraal.Server.Services.Accounts;
 
 namespace OpenGraal.Server.Lobby;
 
-internal sealed class LobbyProtocol : Protocol
+internal sealed class LobbyUser : User
 {
+    private readonly ILogger<LobbyUser> _logger;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<LobbyProtocol> _logger;
-    private readonly LobbyService _lobbyService;
     private readonly AccountService _accountService;
+    private readonly LobbyService _lobbyService;
     private string _accountName = string.Empty;
 
-    public LobbyProtocol(
-        IConfiguration configuration,
-        ILogger<LobbyProtocol> logger,
-        LobbyService lobbyService,
-        AccountService accountService)
-        : base(logger)
+    public LobbyUser(
+        ILogger<LobbyUser> logger, 
+        IConfiguration configuration, 
+        AccountService accountService,
+        LobbyService lobbyService)
     {
-        _configuration = configuration;
         _logger = logger;
-        _lobbyService = lobbyService;
+        _configuration = configuration;
         _accountService = accountService;
-
-        Bind<IdentifyPacket>(0, OnIdentify);
-        Bind<LoginPacket>(1, OnLogin);
+        _lobbyService = lobbyService;
     }
-
-    private static void OnIdentify(IConnection connection, IdentifyPacket packet)
+    
+    public void Login(string accountName, string password)
     {
-        if (packet.ClientVersion != "newmain")
-        {
-            connection.Send(new DisconnectPacket("You are using a unsupported client."));
-        }
-    }
-
-    private void OnLogin(IConnection connection, LoginPacket packet)
-    {
-        if (!_accountService.AccountExists(packet.AccountName, packet.Password))
+        if (!_accountService.AccountExists(accountName, password))
         {
             _logger.LogDebug(
                 "[{SessionId}] Login failed for {Address}",
-                connection.Id, connection.Address);
+                Id, Address);
 
-            connection.Send(new DisconnectPacket("Invalid account name or password."));
+            Send(new Disconnect("Invalid account name or password."));
 
             return;
         }
-
-        _accountName = packet.AccountName;
+        
+        _accountName = accountName;
 
         _logger.LogDebug(
             "[{SessionId}] {Address} has logged in as {AccountName}",
-            connection.Id, connection.Address, _accountName);
+            Id, Address, _accountName);
 
-        SendLogin(connection);
+        SendLogin();
     }
-
-    private void SendLogin(IConnection connection)
+    
+    private void SendLogin()
     {
         /* Get the message of the day. */
         var motd = _configuration["Motd"] ?? string.Empty;
@@ -68,7 +56,7 @@ internal sealed class LobbyProtocol : Protocol
         {
             motd = motd.Replace("%{AccountName}", _accountName);
 
-            connection.Send(new MotdPacket(motd));
+            Send(new Motd(motd));
         }
 
         /* Check if the 'Pay by Credit Card' button should be shown. */
@@ -77,14 +65,14 @@ internal sealed class LobbyProtocol : Protocol
             var url = (_configuration["PayByCreditCardUrl"] ?? "").Trim();
             if (url.Length > 0)
             {
-                connection.Send(new PayByCreditCardPacket(url));
+                Send(new PayByCreditCard(url));
             }
         }
 
         /* Check if the 'Pay by Phone' button should be shown. */
         if (_configuration.GetValue<bool>("PayByPhone"))
         {
-            connection.Send(new PayByPhonePacket());
+            Send(new PayByPhone());
         }
 
         /* Check if the 'Show More' button should be shown. */
@@ -93,12 +81,12 @@ internal sealed class LobbyProtocol : Protocol
             var url = (_configuration["ShowMoreUrl"] ?? "").Trim();
             if (url.Length > 0)
             {
-                connection.Send(new ShowMorePacket(url));
+                Send(new ShowMore(url));
             }
         }
 
         var serverList = _lobbyService.GetServerList();
         
-        connection.Send(new ServerListPacket(serverList));
+        Send(new ServerList(serverList));
     }
 }

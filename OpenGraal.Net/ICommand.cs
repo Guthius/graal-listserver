@@ -3,7 +3,7 @@
 namespace OpenGraal.Net;
 
 [UsedImplicitly(ImplicitUseTargetFlags.WithInheritors | ImplicitUseTargetFlags.WithMembers)]
-public interface IClientPacket<out TSelf>
+public interface ICommand<out TSelf>
 {
-    static abstract TSelf ReadFrom(IPacketInputStream input);
+    static abstract TSelf ReadFrom(Packet packet);
 }

@@ -3,21 +3,21 @@ using OpenGraal.Server.World.Players;
 
 namespace OpenGraal.Server.Game.Packets;
 
-public sealed record PlayerPropertiesPacket(Player Player, params PlayerProperty[] Properties) : IServerPacket
+public sealed record PlayerPropertiesPacket(Player Player, params PlayerProperty[] Properties) : IPacket
 {
     private const int Id = 9;
 	
-    public void WriteTo(IPacketOutputStream output)
+    public void WriteTo(Packet writer)
     {
-        output.WriteGChar(Id);
+        writer.WriteGChar(Id);
 
         foreach (var property in Properties)
         {
-            WriteProperty(property, output);
+            WriteProperty(property, writer);
         }
     }
 
-    private void WriteProperty(PlayerProperty property, IPacketOutputStream output)
+    private void WriteProperty(PlayerProperty property, Packet output)
     {
         output.WriteGChar((int) property);
         
@@ -34,10 +34,10 @@ public sealed record PlayerPropertiesPacket(Player Player, params PlayerProperty
             case PlayerProperty.PLPROP_CURPOWER:
                 output.WriteGChar((int) (Player.Hp * 2));
                 break;
-            
-            case PlayerProperty.PLPROP_RUPEESCOUNT:
-                output.WriteGInt(Player.Rupees);
-                break;
+            //
+            // case PlayerProperty.PLPROP_RUPEESCOUNT:
+            //     output.WriteGInt(Player.Rupees);
+            //     break;
             
             case PlayerProperty.PLPROP_ARROWSCOUNT:
                 output.WriteGChar(Player.Arrows);

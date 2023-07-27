@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenGraal.Net;
+using OpenGraal.Server.Game;
 using OpenGraal.Server.World.Players;
 
 namespace OpenGraal.Server.World;
@@ -64,7 +65,7 @@ internal sealed class WorldService : BackgroundService, IWorld
         return false;
     }
     
-    public Player? CreatePlayer(IConnection connection, string accountName)
+    public Player? CreatePlayer(GameUser user, string accountName)
     {
         if (IsAccountConnected(accountName))
         {

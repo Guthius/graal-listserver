@@ -1,10 +1,10 @@
 ﻿using OpenGraal.Net;
 
-namespace OpenGraal.Server.Game.Packets;
+namespace OpenGraal.Server.Lobby.Packets;
 
-public sealed record DisconnectPacket(string Message) : IPacket
+internal sealed record Motd(string Message) : IPacket
 {
-    private const int Id = 16;
+    private const int Id = 2;
     
     public void WriteTo(Packet writer)
     {

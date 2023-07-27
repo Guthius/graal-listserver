@@ -1,17 +1,5 @@
 ﻿namespace OpenGraal.Server.World.Players;
 
-
-
-
-public enum PlayerEventType
-{
-    ItemPickup
-}
-
-public abstract class PlayerEvent
-{
-}
-
 public enum PlayerProperty
 {
 	PLPROP_NICKNAME			= 0,

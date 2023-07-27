@@ -2,10 +2,10 @@
 
 namespace OpenGraal.Server.Game.Packets;
 
-public sealed record Packet168 : IServerPacket
+public sealed record Packet168 : IPacket
 {
-    public void WriteTo(IPacketOutputStream output)
+    public void WriteTo(Packet writer)
     {
-        output.WriteGChar(168);
+        writer.WriteGChar(168);
     }
 }

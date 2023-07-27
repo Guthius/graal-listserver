@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 namespace OpenGraal.Net;
 
 [UsedImplicitly(ImplicitUseTargetFlags.WithInheritors | ImplicitUseTargetFlags.WithMembers)]
-public interface IServerPacket
+public interface IPacket
 {
-    void WriteTo(IPacketOutputStream output);
+    void WriteTo(Packet writer);
 }

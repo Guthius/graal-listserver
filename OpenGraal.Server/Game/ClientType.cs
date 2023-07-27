@@ -1,5 +1,6 @@
 ﻿namespace OpenGraal.Server.Game;
 
+[Flags]
 public enum ClientType
 {
     Await = -1,

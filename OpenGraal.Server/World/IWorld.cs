@@ -1,11 +1,10 @@
-﻿using OpenGraal.Net;
+﻿using OpenGraal.Server.Game;
 using OpenGraal.Server.World.Players;
 
 namespace OpenGraal.Server.World;
 
-public interface IWorld
+internal interface IWorld
 {
-    Player? CreatePlayer(IConnection connection, string accountName);
-
+    Player? CreatePlayer(GameUser user, string accountName);
     void SetLanguage(Player player, string language);
 }
