@@ -13,9 +13,9 @@ public sealed record Level(
     private const string Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     private const int BoardSize = 64 * 64;
     
-    public static async Task<Level?> LoadNw(string path)
+    public static Level? LoadNw(string path)
     {
-        var lines = await File.ReadAllLinesAsync(path);
+        var lines = File.ReadAllLines(path);
 
         if (lines.Length == 0 || lines[0] != "GLEVNW01")
         {
@@ -90,7 +90,7 @@ public sealed record Level(
                 }
 
                 var chestItem = Item.GetIndexByName(tokens[3]);
-                if (chestItem == -1)
+                if (chestItem == Item.Invalid)
                 {
                     Log.Warning("Invalid item {ItemName} in chest in {FileName} on line {LineNumber}", 
                         tokens[3], path, i + 1);

@@ -2,9 +2,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenGraal.Net;
 using OpenGraal.Server.Game;
+using OpenGraal.Server.Game.Players;
+using OpenGraal.Server.Game.Worlds;
 using OpenGraal.Server.Lobby;
 using OpenGraal.Server.Services.Accounts;
-using OpenGraal.Server.World;
 using Serilog;
 using Serilog.Events;
 
@@ -31,12 +32,12 @@ try
     
     hostBuilder.Services.AddSingleton<AccountService>();
     hostBuilder.Services.AddSingleton<LobbyService>();
-    hostBuilder.Services.AddSingleton<IWorld, WorldService>();
+    hostBuilder.Services.AddSingleton<World>();
             
-    hostBuilder.Services.AddHostedService<WorldService>();
+    hostBuilder.Services.AddHostedService<World>();
             
     hostBuilder.Services.AddGameService<LobbyUser, LobbyParser>();
-    hostBuilder.Services.AddGameService<GameUser, GameParser>();
+    hostBuilder.Services.AddGameService<GameUser, GameCommandParser>();
     hostBuilder.Services.AddSerilog();
 
     var host = hostBuilder.Build();

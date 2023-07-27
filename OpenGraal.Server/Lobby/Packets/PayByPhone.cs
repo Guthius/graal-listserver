@@ -6,9 +6,9 @@ internal sealed record PayByPhone : IPacket
 {
     private const int Id = 6;
 
-    public void WriteTo(Packet writer)
+    public void WriteTo(Packet packet)
     {
-        writer.WriteGChar(Id);
-        writer.WriteStr("1");
+        packet.WriteGChar(Id);
+        packet.WriteStr("1");
     }
 }

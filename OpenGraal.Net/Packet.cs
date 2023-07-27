@@ -1,4 +1,7 @@
-﻿namespace OpenGraal.Net;
+﻿using System.Runtime.InteropServices;
+using System.Text;
+
+namespace OpenGraal.Net;
 
 public sealed record Packet
 {
@@ -12,20 +15,18 @@ public sealed record Packet
     public int BytesWritten => _write - _start;
     public int Length => _end - _start;
 
-    public Packet()
-    {
-    }
-
-    public Packet(byte[] bytes, int offset, int size)
-    {
-        SetBuffer(bytes, offset, size);
-    }
-
     public void SetBuffer(byte[] bytes, int offset, int size)
     {
         _bytes = bytes;
         _start = _read = _write = offset;
         _end = offset + size;
+    }
+
+    public void Dump()
+    {
+        var bytes = _bytes.AsSpan(_start, _end - _start).ToArray();
+        
+        File.WriteAllBytes("PacketDump.bin", bytes);
     }
 
     public void Remove(int offset, int count)
@@ -51,57 +52,193 @@ public sealed record Packet
         }
     }
 
-    public void WriteByte(byte value)
+    public Packet WriteByte(byte value)
     {
         ThrowIfNotEnoughSpace(sizeof(byte));
 
         _bytes[_write] = value;
         _write++;
+
+        return this;
     }
 
-    public void WriteGChar(int value)
+    public Packet WriteBytes(ReadOnlySpan<byte> bytes)
+    {
+        ThrowIfNotEnoughSpace(bytes.Length);
+
+        bytes.CopyTo(_bytes.AsSpan(_write, _end - _write));
+        
+        _write += bytes.Length;
+
+        return this;
+    }
+    
+    public Packet WriteRaw<T>(ReadOnlySpan<T> data) where T : struct
+    {
+        var bytes = MemoryMarshal.AsBytes(data);
+
+        return WriteBytes(bytes);
+    }
+    
+    public Packet WriteRaw<T>(T[] data) where T : struct
+    {
+        var bytes = MemoryMarshal.AsBytes(data.AsSpan());
+
+        return WriteBytes(bytes);
+    }
+
+    public Packet WriteGChar(int value)
     {
         ThrowIfNotEnoughSpace(sizeof(byte));
 
         _bytes[_write] = (byte) (value + 32);
         _write++;
+
+        return this;
     }
 
-    public void WriteStr(string str)
+    public Packet WriteGShort(int value)
+    {
+        ThrowIfNotEnoughSpace(2);
+        
+        _bytes[_write] = (byte) (((value >> 7) & 0x7f) + 32);
+        _bytes[_write + 1] = (byte) ((value & 0x7f) + 32);
+        
+        _write += 2;
+
+        return this;
+    }
+    
+    public Packet WriteGInt(int value)
+    {
+        ThrowIfNotEnoughSpace(3);
+        
+        _bytes[_write] = (byte) (((value >> 14) & 0x7f) + 32);
+        _bytes[_write + 1] = (byte) (((value >> 7) & 0x7f) + 32);
+        _bytes[_write + 2] = (byte) ((value & 0x7f) + 32);
+        
+        _write += 3;
+
+        return this;
+    }
+    
+    public Packet WriteGInt4(int value)
+    {
+        ThrowIfNotEnoughSpace(4);
+        
+        _bytes[_write] = (byte) (((value >> 21) & 0x7f) + 32);
+        _bytes[_write + 1] = (byte) (((value >> 14) & 0x7f) + 32);
+        _bytes[_write + 2] = (byte) (((value >> 7) & 0x7f) + 32);
+        _bytes[_write + 3] = (byte) ((value & 0x7f) + 32);
+        
+        _write += 4;
+
+        return this;
+    }
+    
+    public Packet WriteGInt5(long value)
+    {
+        ThrowIfNotEnoughSpace(5);
+        
+        _bytes[_write] = (byte) (((value >> 28) & 0x7f) + 32);
+        _bytes[_write + 1] = (byte) (((value >> 21) & 0x7f) + 32);
+        _bytes[_write + 2] = (byte) (((value >> 14) & 0x7f) + 32);
+        _bytes[_write + 3] = (byte) (((value >> 7) & 0x7f) + 32);
+        _bytes[_write + 4] = (byte) ((value & 0x7f) + 32);
+        
+        _write += 5;
+
+        return this;
+    }
+    
+    public Packet WriteStr(ReadOnlySpan<char> str)
     {
         ThrowIfNotEnoughSpace(str.Length);
 
-        var len = str.Length;
-        System.Text.Encoding.UTF8.GetBytes(str, 0, len, _bytes, _write);
+        var len = Encoding.UTF8.GetBytes(str, _bytes.AsSpan(_write));
+        
         _write += len;
+
+        return this;
     }
-
-    public void WriteNStr(string str)
+    
+    public Packet WriteNStr(ReadOnlySpan<char> str, byte maxLength = 223)
     {
+        if (str.Length > maxLength)
+        {
+            str = str[..maxLength];
+        }
+        
         ThrowIfNotEnoughSpace(1 + str.Length);
-
-        // TODO: Truncate string if needed...
-
+        
         WriteGChar((byte) str.Length);
         WriteStr(str);
+
+        return this;
+    }
+
+    private void ThrowIfNotEnoughBytesLeft(int count)
+    {
+        if (_end - _read < count)
+        {
+            throw new Exception("end of packet");
+        }
+    }
+    
+    public byte ReadByte()
+    {
+        ThrowIfNotEnoughBytesLeft(sizeof(byte));
+        
+        return _bytes[_read++];
     }
     
     public byte ReadGChar()
     {
-        var value = (byte) (_bytes[_read] - 32);
-        _read++;
+        ThrowIfNotEnoughBytesLeft(sizeof(byte));
+        
+        return (byte) (_bytes[_read++] - 32);
+    }
+    
+    public int ReadGShort()
+    {
+        ThrowIfNotEnoughBytesLeft(2);
+        
+        var value =
+            ((_bytes[_read + 1] - 32) << 7) |
+            (_bytes[_read + 2] - 32);
+
+        _read += 2;
+        
         return value;
     }
+    
+    public int ReadGInt()
+    {
+        ThrowIfNotEnoughBytesLeft(3);
+        
+        var value =
+            ((_bytes[_read] - 32) << 14) |
+            ((_bytes[_read + 1] - 32) << 7) |
+            (_bytes[_read + 2] - 32);
 
+        _read += 3;
+        
+        return value;
+    }
+    
     public string ReadStr()
     {
         return ReadStr(_end - _read);
     }
 
-    public string ReadStr(int length)
+    public string ReadStr(int size)
     {
-        var value = System.Text.Encoding.UTF8.GetString(_bytes, _read, length);
-        _read += length;
+        size = Math.Min(size, _end - _read);
+        
+        var value = Encoding.UTF8.GetString(_bytes, _read, size);
+        
+        _read += size;
+        
         return value;
     }
 

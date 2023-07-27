@@ -1,14 +1,16 @@
 ﻿using OpenGraal.Net;
 using OpenGraal.Server.Game.Commands;
-using OpenGraal.Server.Game.Packets;
+using Serilog;
 
 namespace OpenGraal.Server.Game;
 
-internal sealed class GameParser : CommandParser<GameUser>
+internal sealed class GameCommandParser : CommandParser<GameUser>
 {
-    public GameParser()
+    public GameCommandParser()
     {
+        Bind<GetFile>(23, GetFile);
         Bind<SetLanguage>(37, SetLanguage);
+        Bind<GetMapInfo>(39, GetMapInfo);
     }
 
     private static void RemoveInjectedByteFromPacket(GameUser user, Packet packet)
@@ -27,7 +29,7 @@ internal sealed class GameParser : CommandParser<GameUser>
          * First packet that arrives will always be the login packet. We need to handle this
          * here because the login packet does not contain a packet ID.
          */
-        if (user.ClientType == ClientType.Await)
+        if (user.ClientType == GameUserType.Await)
         {
             HandleLogin(user, packet);
 
@@ -36,10 +38,7 @@ internal sealed class GameParser : CommandParser<GameUser>
 
         if (user.Player is null)
         {
-            user.Send(new DisconnectPacket(
-                "An unknown problem occured during your session."));
-
-            user.Disconnect();
+            user.Disconnect("An unknown problem occured during your session.");
 
             return;
         }
@@ -51,7 +50,7 @@ internal sealed class GameParser : CommandParser<GameUser>
 
     private static void HandleLogin(GameUser user, Packet packet)
     {
-        var clientType = (ClientType) (1 << packet.ReadGChar());
+        var clientType = (GameUserType) (1 << packet.ReadGChar());
 
         var command = Login.ReadFrom(packet);
 
@@ -63,8 +62,21 @@ internal sealed class GameParser : CommandParser<GameUser>
             command.ClientVersion);
     }
 
-    private static void SetLanguage(GameUser user, SetLanguage packet)
+    private static void GetFile(GameUser user, GetFile command)
     {
-        user.SetLanguage(packet.Language);
+        Log.Information("User requested file {FileName}", command.FileName);
+
+        user.SendFile(command.FileName);
+    }
+    
+    private static void SetLanguage(GameUser user, SetLanguage command)
+    {
+        user.SetLanguage(command.Language);
+    }
+    
+    private static void GetMapInfo(GameUser user, GetMapInfo command)
+    {
+        // Don't know what this does exactly.
+        // Might be GMap related.
     }
 }

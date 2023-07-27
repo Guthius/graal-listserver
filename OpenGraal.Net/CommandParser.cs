@@ -22,13 +22,15 @@ public abstract class CommandParser<TUser> where TUser : User
 
         if (!_commands.TryGetValue(commandId, out var commandHandler))
         {
-            Log.Warning("Received unbound packet {CommandId:X2} ({Size} bytes) from {ClientAddress} [{ClientId}]",
+            Log.Warning("Received unbound packet {CommandId} ({Size} bytes) from {ClientAddress} [{ClientId}]",
                 commandId, packet.Length, user.Address, user.Id);
+
+            packet.Dump();
 
             return;
         }
 
-        Log.Verbose("Received {CommandId} packet ({Size} bytes) from {ClientAddress} [{ClientId}]",
+        Log.Verbose("Received packet {CommandId} ({Size} bytes) from {ClientAddress} [{ClientId}]",
             commandId, packet.Length, user.Address, user.Id);
         
         commandHandler(user, packet);

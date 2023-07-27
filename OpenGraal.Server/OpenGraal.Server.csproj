@@ -34,6 +34,12 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\OpenGraal.Net\OpenGraal.Net.csproj" />
+	  <ProjectReference Include="..\src\OpenGraal.Data\OpenGraal.Data.csproj" />
+
+
+
+
+
 	</ItemGroup>
 
 

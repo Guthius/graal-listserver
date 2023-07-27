@@ -6,9 +6,9 @@ internal sealed record Motd(string Message) : IPacket
 {
     private const int Id = 2;
     
-    public void WriteTo(Packet writer)
+    public void WriteTo(Packet packet)
     {
-        writer.WriteGChar(Id);
-        writer.WriteStr(Message);
+        packet.WriteGChar(Id);
+        packet.WriteStr(Message);
     }
 }

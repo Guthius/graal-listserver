@@ -6,9 +6,9 @@ internal sealed record ShowMore(string Url) : IPacket
 {
     private const int Id = 3;
     
-    public void WriteTo(Packet writer)
+    public void WriteTo(Packet packet)
     {
-        writer.WriteGChar(Id);
-        writer.WriteStr(Url);
+        packet.WriteGChar(Id);
+        packet.WriteStr(Url);
     }
 }

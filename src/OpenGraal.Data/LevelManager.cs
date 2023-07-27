@@ -15,7 +15,7 @@ public static class LevelManager
             {
                 var fileName = Path.GetFileName(x).ToLowerInvariant();
 
-                var level = await Level.LoadNw(x);
+                var level = Level.LoadNw(x);
                 if (level is null)
                 {
                     return;

@@ -7,10 +7,10 @@ internal sealed record ServerList(List<ServerInfo> ServerInfos) : IPacket
 {
     private const int Id = 0;
     
-    public void WriteTo(Packet writer)
+    public void WriteTo(Packet packet)
     {
-        writer.WriteGChar(Id);
-        writer.WriteGChar(ServerInfos.Count);
+        packet.WriteGChar(Id);
+        packet.WriteGChar(ServerInfos.Count);
 
         foreach (var serverInfo in ServerInfos)
         {
@@ -21,15 +21,15 @@ internal sealed record ServerList(List<ServerInfo> ServerInfos) : IPacket
                 name = "P " + name;
             }
             
-            writer.WriteGChar(8);
-            writer.WriteNStr(name);
-            writer.WriteNStr(serverInfo.Language);
-            writer.WriteNStr(serverInfo.Description);
-            writer.WriteNStr(serverInfo.Url);
-            writer.WriteNStr(serverInfo.Version);
-            writer.WriteNStr(serverInfo.Players.ToString());
-            writer.WriteNStr(serverInfo.Ip);
-            writer.WriteNStr(serverInfo.Port.ToString());
+            packet.WriteGChar(8);
+            packet.WriteNStr(name);
+            packet.WriteNStr(serverInfo.Language);
+            packet.WriteNStr(serverInfo.Description);
+            packet.WriteNStr(serverInfo.Url);
+            packet.WriteNStr(serverInfo.Version);
+            packet.WriteNStr(serverInfo.Players.ToString());
+            packet.WriteNStr(serverInfo.Ip);
+            packet.WriteNStr(serverInfo.Port.ToString());
         }
     }
 }

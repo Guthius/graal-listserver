@@ -66,6 +66,38 @@ public sealed class Channel
         
         BeginReceive();
     }
+
+    public void Send(Action<Packet> action)
+    {
+        if (!_connected)
+        {
+            return;
+        }
+
+        _lock.EnterWriteLock();
+
+        var bufferOffset = _bufferOutOffset + _bufferOutLen;
+        var bufferSize = BufferSize - _bufferOutLen;
+
+        _packetOut.SetBuffer(_buffer, bufferOffset, bufferSize);
+
+        action(_packetOut);
+
+        _packetOut.WriteByte(PacketDelimiter);
+
+        _bufferOutLen += _packetOut.BytesWritten;
+        
+        _lock.ExitWriteLock();
+
+        if (_sending)
+        {
+            return;
+        }
+
+        _sending = true;
+
+        BeginSend();
+    }
     
     public void Send(IPacket packet)
     {

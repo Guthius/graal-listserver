@@ -17,6 +17,11 @@ public abstract class User
         Channel.Send(packet);
     }
 
+    public void Send(Action<Packet> action)
+    {
+        Channel.Send(action);
+    }
+    
     public void Disconnect()
     {
         Channel.Close();

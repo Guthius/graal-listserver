@@ -5,5 +5,5 @@ namespace OpenGraal.Net;
 [UsedImplicitly(ImplicitUseTargetFlags.WithInheritors | ImplicitUseTargetFlags.WithMembers)]
 public interface IPacket
 {
-    void WriteTo(Packet writer);
+    void WriteTo(Packet packet);
 }

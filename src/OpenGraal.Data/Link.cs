@@ -55,4 +55,9 @@ public sealed record Link(
 
         return true;
     }
+
+    public override string ToString()
+    {
+        return $"{FileName} {X} {Y} {Width} {Height} {NewY} {NewY}";
+    }
 }

@@ -6,9 +6,9 @@ internal sealed record PayByCreditCard(string Url) : IPacket
 {
     private const int Id = 5;
     
-    public void WriteTo(Packet output)
+    public void WriteTo(Packet packet)
     {
-        output.WriteGChar(Id);
-        output.WriteStr(Url);
+        packet.WriteGChar(Id);
+        packet.WriteStr(Url);
     }
 }
