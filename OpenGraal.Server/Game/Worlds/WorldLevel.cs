@@ -38,7 +38,7 @@ public sealed class WorldLevel
             _players.Add(player);
         }
 
-        player.SendProperties(PlayerProperty.PLPROP_X, PlayerProperty.PLPROP_Y);
+        player.SendPropertiesToSelf(PlayerProperty.X, PlayerProperty.Y);
         player.SendPlayerWarp(player.X, player.Y, _levelName);
         player.SendLevelName(_levelName);
         player.SendRaw(_level.Board);
@@ -58,8 +58,23 @@ public sealed class WorldLevel
         player.SendIsLeader();
         player.SendNewWorldTime();
         player.SendActiveLevel(_levelName);
-        
-        // TODO: Exchange properties...
+
+        lock (_players)
+        {
+            foreach (var other in _players)
+            {
+                if (other == player)
+                {
+                    continue;
+                }
+            
+                other.SendPropertiesTo(player,
+                    PlayerPropertySet.Level);
+            
+                player.SendPropertiesTo(other, 
+                    PlayerPropertySet.Level);
+            }
+        }
     }
 
     public void Remove(Player player)

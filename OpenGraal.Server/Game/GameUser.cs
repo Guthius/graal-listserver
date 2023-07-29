@@ -11,12 +11,12 @@ public sealed class GameUser : User, IDisposable
 
     private readonly ILogger<GameUser> _logger;
     private readonly World _world;
-    
+
     public GameUserType ClientType = GameUserType.Await;
     public uint Iterator = IteratorStart;
     public byte Key;
     public Player? Player;
-    
+
     public GameUser(ILogger<GameUser> logger, World world)
     {
         _logger = logger;
@@ -38,40 +38,40 @@ public sealed class GameUser : User, IDisposable
             .WriteGChar(25)
             .WriteGChar(73));
     }
-    
+
     public void SendFile(string fileName)
     {
         Send(packet => packet
             .WriteGChar(30)
             .WriteStr(fileName));
     }
-    
+
     public void SendStartMessage(string message)
     {
         Send(packet => packet
             .WriteGChar(41)
             .WriteStr(message));
     }
-    
+
     public void SendStaffGuilds()
     {
         const string guilds = "Server,Manager,Owner,Admin,FAQ,LAT,NAT,GAT,GP,GP Chief,Bugs Admin,NPC Admin,Gani Team,GFX Admin,Events Team,Events Admin,Guild Admin";
 
         var str = string.Join(',', guilds
             .Split(',').Select(s => '"' + s + '"'));
-        
+
         Send(packet => packet
             .WriteGChar(47)
             .WriteStr(str));
     }
-    
+
     public void SendRpgMessage(string message)
     {
         Send(packet => packet
             .WriteGChar(179)
             .WriteStr(message));
     }
-    
+
     private void SendStatuses()
     {
         const string statuses = "Online,Away,DND,Eating,Hiding,No PMs,RPing,Sparring,PKing";
@@ -83,7 +83,7 @@ public sealed class GameUser : User, IDisposable
             .WriteGChar(180)
             .WriteStr(str));
     }
-    
+
     public void Login(byte key, string accountName, string password, GameUserType clientType, string clientVersion)
     {
         Key = key;
@@ -95,7 +95,7 @@ public sealed class GameUser : User, IDisposable
             clientVersion);
 
         SendSignature();
-        
+
         Send(packet => packet.WriteGChar(103).WriteStr(" *"));
         Send(packet => packet.WriteGChar(194));
         Send(packet => packet.WriteGChar(190));
@@ -109,8 +109,6 @@ public sealed class GameUser : User, IDisposable
 
             return;
         }
-
-        Send(Player.GetProperties(PlayerPropertySet.SendLogin));
         
         SendStaffGuilds();
         SendStatuses();
@@ -125,7 +123,7 @@ public sealed class GameUser : User, IDisposable
         var level = _world.GetLevel("onlinestartlocal.nw");
 
         Player.Warp(level, Player.X, Player.Y);
-        
+
         // TODO: Send bigmap if it was set
         // TODO: Send the minimap if it was set...
 
@@ -134,10 +132,31 @@ public sealed class GameUser : User, IDisposable
             "\"OpenGraal Server programmed by Guthius.\"");
 
         SendStartMessage("Hello World");
-        
+
         Send(packet => packet.WriteGChar(82)); // Enable Server Text
+
+        //var others = _world.GetPlayers();
+        
+        // foreach (var other in others)
+        // {
+        //     if (other == Player)
+        //     {
+        //         continue;
+        //     }
+        //     
+        //     other.SendPropertiesTo(Player, 
+        //         PlayerPropertySet.Login);
+        //     
+        //     Player.SendPropertiesTo(other, 
+        //         PlayerPropertySet.Login);
+        // }
     }
-    
+
+    public void SetPlayerProperties(Packet properties)
+    {
+        Player?.SetProperties(properties);
+    }
+
     public void SetLanguage(string language)
     {
         if (Player is null)
@@ -146,12 +165,12 @@ public sealed class GameUser : User, IDisposable
         }
 
         Player.Language = language;
-        
+
         _logger.LogInformation("{AccountName} set language to {Language}",
             Player.AccountName,
             Player.Language);
     }
-    
+
     public void Dispose()
     {
         if (Player is not null)

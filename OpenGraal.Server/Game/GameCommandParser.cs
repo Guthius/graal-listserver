@@ -1,6 +1,5 @@
 ﻿using OpenGraal.Net;
 using OpenGraal.Server.Game.Commands;
-using Serilog;
 
 namespace OpenGraal.Server.Game;
 
@@ -8,6 +7,7 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
 {
     public GameCommandParser()
     {
+        Bind<SetPlayerProperties>(2, SetPlayerProperties);
         Bind<GetFile>(23, GetFile);
         Bind<SetLanguage>(37, SetLanguage);
         Bind<GetMapInfo>(39, GetMapInfo);
@@ -62,10 +62,13 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
             command.ClientVersion);
     }
 
+    private static void SetPlayerProperties(GameUser user, SetPlayerProperties command)
+    {
+        user.SetPlayerProperties(command.Properties);
+    }
+    
     private static void GetFile(GameUser user, GetFile command)
     {
-        Log.Information("User requested file {FileName}", command.FileName);
-
         user.SendFile(command.FileName);
     }
     

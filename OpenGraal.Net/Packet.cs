@@ -100,6 +100,8 @@ public sealed record Packet
     public Packet WriteGShort(int value)
     {
         ThrowIfNotEnoughSpace(2);
+
+        value &= 0x3FFF;
         
         _bytes[_write] = (byte) (((value >> 7) & 0x7f) + 32);
         _bytes[_write + 1] = (byte) ((value & 0x7f) + 32);
@@ -112,6 +114,8 @@ public sealed record Packet
     public Packet WriteGInt(int value)
     {
         ThrowIfNotEnoughSpace(3);
+
+        value &= 0x1FFFFF;
         
         _bytes[_write] = (byte) (((value >> 14) & 0x7f) + 32);
         _bytes[_write + 1] = (byte) (((value >> 7) & 0x7f) + 32);
@@ -125,6 +129,8 @@ public sealed record Packet
     public Packet WriteGInt4(int value)
     {
         ThrowIfNotEnoughSpace(4);
+
+        value &= 0xFFFFFFF;
         
         _bytes[_write] = (byte) (((value >> 21) & 0x7f) + 32);
         _bytes[_write + 1] = (byte) (((value >> 14) & 0x7f) + 32);
@@ -139,6 +145,8 @@ public sealed record Packet
     public Packet WriteGInt5(long value)
     {
         ThrowIfNotEnoughSpace(5);
+
+        value &= 0x7FFFFFFFF;
         
         _bytes[_write] = (byte) (((value >> 28) & 0x7f) + 32);
         _bytes[_write + 1] = (byte) (((value >> 21) & 0x7f) + 32);
@@ -177,6 +185,13 @@ public sealed record Packet
         return this;
     }
 
+    public Packet Write(Action<Packet> writer)
+    {
+        writer(this);
+
+        return this;
+    }
+    
     private void ThrowIfNotEnoughBytesLeft(int count)
     {
         if (_end - _read < count)
@@ -191,6 +206,26 @@ public sealed record Packet
         
         return _bytes[_read++];
     }
+
+    public byte[] ReadBytes(int count)
+    {
+        count = Math.Min(count, _end - _read);
+        if (count == 0)
+        {
+            return Array.Empty<byte>();
+        }
+
+        var value = _bytes.AsSpan(_read, count).ToArray();
+
+        _read += count;
+
+        return value;
+    }
+
+    public byte[] ReadBytes()
+    {
+        return ReadBytes(_end - _read);
+    }
     
     public byte ReadGChar()
     {
@@ -204,8 +239,8 @@ public sealed record Packet
         ThrowIfNotEnoughBytesLeft(2);
         
         var value =
-            ((_bytes[_read + 1] - 32) << 7) |
-            (_bytes[_read + 2] - 32);
+            ((_bytes[_read] - 32) << 7) |
+            (_bytes[_read + 1] - 32);
 
         _read += 2;
         
@@ -222,6 +257,37 @@ public sealed record Packet
             (_bytes[_read + 2] - 32);
 
         _read += 3;
+        
+        return value;
+    }
+    
+    public int ReadGInt4()
+    {
+        ThrowIfNotEnoughBytesLeft(4);
+        
+        var value =
+            ((_bytes[_read] - 32) << 21) |
+            ((_bytes[_read + 1] - 32) << 14) |
+            ((_bytes[_read + 2] - 32) << 7) |
+            (_bytes[_read + 3] - 32);
+
+        _read += 4;
+        
+        return value;
+    }
+    
+    public int ReadGInt5()
+    {
+        ThrowIfNotEnoughBytesLeft(5);
+        
+        var value =
+            ((_bytes[_read] - 32) << 28) |
+            ((_bytes[_read + 1] - 32) << 21) |
+            ((_bytes[_read + 2] - 32) << 14) |
+            ((_bytes[_read + 3] - 32) << 7) |
+            (_bytes[_read + 4] - 32);
+
+        _read += 5;
         
         return value;
     }

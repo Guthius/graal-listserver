@@ -75,12 +75,28 @@ public sealed class World : BackgroundService
         }
 
         var player = new Player(this, user);
-
+        
+        player.SendPropertiesToSelf(PlayerPropertySet.Login);
+        
         lock (_players)
         {
             _players.Add(player);
+            
+            foreach (var other in _players)
+            {
+                if (other == player)
+                {
+                    continue;
+                }
+            
+                other.SendPropertiesTo(player,
+                    PlayerPropertySet.Level);
+            
+                player.SendPropertiesTo(other, 
+                    PlayerPropertySet.Level);
+            }
         }
-
+        
         return player;
     }
 
@@ -89,6 +105,16 @@ public sealed class World : BackgroundService
         lock (_players)
         {
             _players.Remove(player);
+        }
+
+        player.SendPropertiesToAll(PlayerProperty.PLPROP_PCONNECTED);
+    }
+
+    public List<Player> GetPlayers()
+    {
+        lock (_players)
+        {
+            return new List<Player>(_players);
         }
     }
 
