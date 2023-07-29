@@ -137,6 +137,19 @@ public sealed class Player
             player => player != this);
     }
 
+    public void SendPropertiesToAllAndSelf(params PlayerProperty[] properties)
+    {
+        _world.SendTo(packet => packet
+                .WriteGChar(PacketId.OtherPlayerProperties)
+                .WriteGShort(Id)
+                .Write(GetProperties(properties)),
+            player => player != this);
+        
+        Send(packet => packet
+            .WriteGChar(PacketId.PlayerProperties)
+            .Write(GetProperties(properties)));
+    }
+
     public void SendPropertiesTo(Player other, params PlayerProperty[] properties)
     {
         other.Send(packet => packet
@@ -265,10 +278,10 @@ public sealed class Player
             {
                 propertiesToAll.Add(property);
             }
-            
+
             SetProperty(property, packet);
         }
-        
+
         if (propertiesToLevel.Count > 0)
         {
             SendPropertiesToLevel(propertiesToLevel.ToArray());
@@ -329,11 +342,11 @@ public sealed class Player
 
             if (pos != -1)
             {
-                var guild = nickName[(pos + 1)..^2];
+                var guild = nickName[(pos + 1)..^1].Trim();
 
                 SetGuild(guild);
 
-                nickName = nickName[pos..];
+                nickName = nickName[..pos].Trim();
             }
         }
 
@@ -342,9 +355,9 @@ public sealed class Player
             nickName = "unknown";
         }
 
-        if (nickName == AccountName)
+        if (nickName.Equals(AccountName, StringComparison.OrdinalIgnoreCase))
         {
-            nickName = "*" + nickName;
+            nickName = "*" + AccountName;
         }
 
         if (!string.IsNullOrEmpty(_guild))
@@ -432,7 +445,7 @@ public sealed class Player
         {
             SetNickName(chat[8..].Trim());
 
-            SendPropertiesToAll(PlayerProperty.NickName);
+            SendPropertiesToAllAndSelf(PlayerProperty.NickName);
 
             return true;
         }
@@ -446,7 +459,7 @@ public sealed class Player
         {
             return;
         }
-        
+
         Chat = chat;
     }
 
