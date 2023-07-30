@@ -151,20 +151,20 @@ public sealed class GameUser : User, IDisposable
         //         PlayerPropertySet.Login);
         // }
     }
-
-    public void ShowImage(string fileName)
-    {
-        Player?.SendToLevel(packet => packet
-            .WriteGChar(24)
-            .WriteGShort(Id)
-            .WriteStr(fileName));
-    }
     
     public void SetPlayerProperties(Packet properties)
     {
         Player?.SetProperties(properties);
     }
 
+    public void ShowImage(string fileName)
+    {
+        Player?.SendToLevel(packet => packet
+            .WriteGChar(32)
+            .WriteGShort(Id)
+            .WriteStr(fileName));
+    }
+    
     public void SetLanguage(string language)
     {
         if (Player is null)
@@ -179,6 +179,26 @@ public sealed class GameUser : User, IDisposable
             Player.Language);
     }
 
+    public void TriggerAction(int npcId, float x, float y, string actionName)
+    {
+        if (Player is null)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "{AccountName} triggered {ActionName} on NPC {NpcId} at ({X}, {Y})",
+            Player.AccountName, actionName, npcId, x, y);
+
+        Player.SendToLevel(packet => packet
+            .WriteGChar(48)
+            .WriteGShort(Id)
+            .WriteGInt(npcId)
+            .WriteGChar((byte) (x * 2))
+            .WriteGChar((byte) (y * 2))
+            .WriteStr(actionName));
+    }
+    
     public void Dispose()
     {
         if (Player is not null)
