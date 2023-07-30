@@ -1,5 +1,4 @@
-﻿using System.Data.Common;
-using OpenGraal.Net;
+﻿using OpenGraal.Net;
 using OpenGraal.Server.Game.Commands;
 
 namespace OpenGraal.Server.Game;
@@ -11,6 +10,7 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
         Bind<SetPlayerProperties>(2, SetPlayerProperties);
         Bind<GetFile>(23, GetFile);
         Bind<ShowImage>(24, ShowImage);
+        Bind<UpdateFile>(34, UpdateFile);
         Bind<SetLanguage>(37, SetLanguage);
         Bind<TriggerAction>(38, TriggerAction);
         Bind<GetMapInfo>(39, GetMapInfo);
@@ -78,6 +78,13 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
     private static void ShowImage(GameUser user, ShowImage command)
     {
         user.ShowImage(command.Data);
+    }
+    
+    private static void UpdateFile(GameUser user, UpdateFile command)
+    {
+        user.UpdateFile(
+            command.FileName, 
+            command.LastModified);
     }
     
     private static void SetLanguage(GameUser user, SetLanguage command)

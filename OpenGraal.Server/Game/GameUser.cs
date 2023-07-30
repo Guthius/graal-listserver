@@ -164,6 +164,22 @@ public sealed class GameUser : User, IDisposable
             .WriteGShort(Id)
             .WriteStr(fileName));
     }
+
+    public void UpdateFile(string fileName, long lastModified)
+    {
+        if (Player is null)
+        {
+            Disconnect("You are not authorized to perform this operation.");
+
+            return;
+        }
+        
+        var dateTime = DateTimeOffset.FromUnixTimeSeconds(lastModified);
+
+        _logger.LogDebug(
+            "{AccountName} update file {FileName} (Last Modified: {LastModified})",
+            Player.AccountName, fileName, dateTime.ToString("u"));
+    }
     
     public void SetLanguage(string language)
     {
