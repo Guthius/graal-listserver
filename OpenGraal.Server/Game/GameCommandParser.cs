@@ -8,6 +8,7 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
     public GameCommandParser()
     {
         Bind<SetPlayerProperties>(2, SetPlayerProperties);
+        Bind<ReportPlayerKiller>(14, ReportPlayerKiller);
         Bind<GetFile>(23, GetFile);
         Bind<ShowImage>(24, ShowImage);
         Bind<UpdateFile>(34, UpdateFile);
@@ -70,6 +71,11 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
         user.SetPlayerProperties(command.Properties);
     }
     
+    private static void ReportPlayerKiller(GameUser user, ReportPlayerKiller command)
+    {
+        user.ReportPlayerKiller(command.KillerId);
+    }
+
     private static void GetFile(GameUser user, GetFile command)
     {
         user.SendFile(command.FileName);

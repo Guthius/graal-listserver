@@ -157,6 +157,24 @@ public sealed class GameUser : User, IDisposable
         Player?.SetProperties(properties);
     }
 
+    public void ReportPlayerKiller(int killerId)
+    {
+        if (Player is null)
+        {
+            return;
+        }
+        
+        var killer = _world.GetPlayer(killerId);
+        if (killer is null)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "{AccountName} was killed by {Killer}",
+            Player.AccountName, killer.AccountName);
+    }
+    
     public void ShowImage(string fileName)
     {
         Player?.SendToLevel(packet => packet

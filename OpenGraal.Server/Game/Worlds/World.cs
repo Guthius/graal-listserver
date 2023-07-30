@@ -118,6 +118,14 @@ public sealed class World : BackgroundService
             "{AccountName} has left the world", 
             player.AccountName);
     }
+
+    public Player? GetPlayer(int id)
+    {
+        lock (_players)
+        {
+            return _players.FirstOrDefault(x => x.Id == id);
+        }
+    }
     
     public void SendTo(Action<Packet> packet, Func<Player, bool> predicate)
     {
