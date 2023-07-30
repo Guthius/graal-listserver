@@ -9,17 +9,6 @@ using OpenGraal.Server.Services.Accounts;
 using Serilog;
 using Serilog.Events;
 
-var player = new Player(null, null);
-var buffer = new byte[1024];
-var packet = new Packet();
-packet.SetBuffer(buffer, 0, 1024);
-packet.Write(x => x
-    .WriteGChar(PacketId.OtherPlayerProperties)
-    .WriteGShort(2)
-    .Write(player.GetProperties(PlayerPropertySet.Login)));
-var data = buffer.AsSpan(0, packet.BytesWritten).ToArray();
-File.WriteAllBytes("Packet.bin", data);
-
 Console.Title = "OpenGraal Server";
 
 Console.ForegroundColor = ConsoleColor.Green;

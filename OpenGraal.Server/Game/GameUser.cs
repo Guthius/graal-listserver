@@ -152,6 +152,14 @@ public sealed class GameUser : User, IDisposable
         // }
     }
 
+    public void ShowImage(string fileName)
+    {
+        Player?.SendToLevel(packet => packet
+            .WriteGChar(24)
+            .WriteGShort(Id)
+            .WriteStr(fileName));
+    }
+    
     public void SetPlayerProperties(Packet properties)
     {
         Player?.SetProperties(properties);

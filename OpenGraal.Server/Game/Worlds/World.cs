@@ -74,9 +74,12 @@ public sealed class World : BackgroundService
             return null;
         }
 
-        var player = new Player(this, user);
-        
-        player.SendPropertiesToSelf(PlayerPropertySet.Login);
+        var player = new Player(this, user)
+        {
+            AccountName = accountName
+        };
+
+        player.SendPropertiesToSelf(PlayerPropertySet.Init);
         
         lock (_players)
         {
@@ -88,14 +91,16 @@ public sealed class World : BackgroundService
                 {
                     continue;
                 }
-            
-                other.SendPropertiesTo(player,
-                    PlayerPropertySet.Level);
-            
-                player.SendPropertiesTo(other, 
-                    PlayerPropertySet.Level);
+
+                other.SendPropertiesTo(player, PlayerPropertySet.InitOthers);
+                
+                player.SendPropertiesTo(other, PlayerPropertySet.InitOthers);
             }
         }
+        
+        _logger.LogInformation(
+            "{AccountName} has entered the world", 
+            accountName);
         
         return player;
     }
@@ -107,17 +112,13 @@ public sealed class World : BackgroundService
             _players.Remove(player);
         }
 
-        player.SendPropertiesToAll(PlayerProperty.PLPROP_PCONNECTED);
+        player.SendPropertiesToAll(PlayerProperty.Disconnected);
+        
+        _logger.LogInformation(
+            "{AccountName} has left the world", 
+            player.AccountName);
     }
-
-    public List<Player> GetPlayers()
-    {
-        lock (_players)
-        {
-            return new List<Player>(_players);
-        }
-    }
-
+    
     public void SendTo(Action<Packet> packet, Func<Player, bool> predicate)
     {
         lock (_players)

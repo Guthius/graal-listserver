@@ -9,6 +9,7 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
     {
         Bind<SetPlayerProperties>(2, SetPlayerProperties);
         Bind<GetFile>(23, GetFile);
+        Bind<ShowImage>(24, ShowImage);
         Bind<SetLanguage>(37, SetLanguage);
         Bind<GetMapInfo>(39, GetMapInfo);
     }
@@ -70,6 +71,11 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
     private static void GetFile(GameUser user, GetFile command)
     {
         user.SendFile(command.FileName);
+    }
+    
+    private static void ShowImage(GameUser user, ShowImage command)
+    {
+        user.ShowImage(command.Data);
     }
     
     private static void SetLanguage(GameUser user, SetLanguage command)

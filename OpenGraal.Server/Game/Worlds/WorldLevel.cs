@@ -37,7 +37,9 @@ public sealed class WorldLevel
 
             _players.Add(player);
         }
-
+        
+        player.Level = _levelName;
+        
         player.SendPropertiesToSelf(PlayerProperty.X, PlayerProperty.Y);
         player.SendPlayerWarp(player.X, player.Y, _levelName);
         player.SendLevelName(_levelName);
@@ -67,12 +69,24 @@ public sealed class WorldLevel
                 {
                     continue;
                 }
-            
-                other.SendPropertiesTo(player,
-                    PlayerPropertySet.Level);
-            
+                
                 player.SendPropertiesTo(other, 
                     PlayerPropertySet.Level);
+
+                other.SendPropertiesTo(player, 
+                    PlayerPropertySet.Level);
+                
+                player.Send(packet => packet
+                    .WriteGChar(PacketId.OtherPlayerProperties)
+                    .WriteGShort(other.Id)
+                    .WriteGChar((byte) PlayerProperty.InLevel)
+                    .WriteGChar(1));
+                
+                other.Send(packet => packet
+                    .WriteGChar(PacketId.OtherPlayerProperties)
+                    .WriteGShort(player.Id)
+                    .WriteGChar((byte) PlayerProperty.InLevel)
+                    .WriteGChar(1));
             }
         }
     }
@@ -98,7 +112,7 @@ public sealed class WorldLevel
                 player.Send(packet => packet
                     .WriteGChar(PacketId.OtherPlayerProperties)
                     .WriteGShort(other.Id)
-                    .WriteGChar((int) PlayerProperty.PLPROP_JOINLEAVELVL)
+                    .WriteGChar((int) PlayerProperty.InLevel)
                     .WriteGChar(0));
             }
         }
@@ -106,7 +120,7 @@ public sealed class WorldLevel
         SendToAll(packet => packet
             .WriteGChar(PacketId.OtherPlayerProperties)
             .WriteGShort(player.Id)
-            .WriteGChar((int) PlayerProperty.PLPROP_JOINLEAVELVL)
+            .WriteGChar((int) PlayerProperty.InLevel)
             .WriteGChar(0));
     }
 

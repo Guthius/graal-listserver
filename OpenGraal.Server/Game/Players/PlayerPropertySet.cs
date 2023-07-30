@@ -2,8 +2,9 @@
 
 public static class PlayerPropertySet
 {
-    public static readonly PlayerProperty[] Local =
+    public static readonly PlayerProperty[] InitOthers =
     {
+        PlayerProperty.NickName,
         PlayerProperty.Hp,
         PlayerProperty.SwordPowerAndImage,
         PlayerProperty.ShieldPowerAndImage,
@@ -21,8 +22,6 @@ public static class PlayerPropertySet
         PlayerProperty.HorseImage,
         PlayerProperty.CarryNpc,
         PlayerProperty.ApCounter,
-        PlayerProperty.IpAddr,
-        PlayerProperty.UdpPort,
         PlayerProperty.Alignment,
         PlayerProperty.AccountName,
         PlayerProperty.BodyImage,
@@ -39,7 +38,7 @@ public static class PlayerPropertySet
         PlayerProperty.GaniAttribute7,
         PlayerProperty.GaniAttribute8,
         PlayerProperty.GaniAttribute9,
-        PlayerProperty.PLPROP_JOINLEAVELVL,
+        PlayerProperty.InLevel,
         PlayerProperty.StatusMessage,
         PlayerProperty.GaniAttribute10,
         PlayerProperty.GaniAttribute11,
@@ -71,7 +70,7 @@ public static class PlayerPropertySet
     /// <summary>
     /// The properties that should be sent to a player after login.
     /// </summary>
-    public static readonly PlayerProperty[] Login =
+    public static readonly PlayerProperty[] Init =
     {
         PlayerProperty.MaxHp,
         PlayerProperty.Hp,
@@ -84,6 +83,7 @@ public static class PlayerPropertySet
         PlayerProperty.Gani,
         PlayerProperty.HeadImage,
         PlayerProperty.Colors,
+        PlayerProperty.Id,
         PlayerProperty.Sprite,
         PlayerProperty.Status,
         PlayerProperty.HorseImage,
@@ -130,12 +130,13 @@ public static class PlayerPropertySet
 
     public static readonly PlayerProperty[] Level =
     {
-        PlayerProperty.NickName,  
-        PlayerProperty.SwordPowerAndImage,
-        PlayerProperty.ShieldPowerAndImage,
-        PlayerProperty.Gani,
         PlayerProperty.HeadImage,
-        PlayerProperty.Chat,
+        
+        //PlayerProperty.SwordPowerAndImage,
+        //PlayerProperty.ShieldPowerAndImage,
+        //PlayerProperty.Gani,
+        
+        //PlayerProperty.Chat,
         PlayerProperty.Colors,
         PlayerProperty.X,
         PlayerProperty.Y,
@@ -145,10 +146,7 @@ public static class PlayerPropertySet
         PlayerProperty.Level,
         PlayerProperty.HorseImage,
         PlayerProperty.CarryNpc,
-        PlayerProperty.IpAddr,
-        PlayerProperty.UdpPort,
         PlayerProperty.Alignment,
-        PlayerProperty.AccountName,
         PlayerProperty.BodyImage,
         PlayerProperty.Rating,
         PlayerProperty.GaniAttribute1,
@@ -163,7 +161,7 @@ public static class PlayerPropertySet
         PlayerProperty.GaniAttribute7,
         PlayerProperty.GaniAttribute8,
         PlayerProperty.GaniAttribute9,
-        PlayerProperty.PLPROP_JOINLEAVELVL,
+        PlayerProperty.InLevel,
         PlayerProperty.StatusMessage,
         PlayerProperty.GaniAttribute10,
         PlayerProperty.GaniAttribute11,
@@ -188,7 +186,6 @@ public static class PlayerPropertySet
         PlayerProperty.GaniAttribute30, 
         PlayerProperty.X2,
         PlayerProperty.Y2,
-        PlayerProperty.Z2,
-        PlayerProperty.CommunityName, 
+        PlayerProperty.Z2
     };
 }

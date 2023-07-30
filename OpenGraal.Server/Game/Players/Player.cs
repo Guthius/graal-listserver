@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using OpenGraal.Data;
 using OpenGraal.Net;
 using OpenGraal.Server.Game.Worlds;
+using Serilog;
 
 namespace OpenGraal.Server.Game.Players;
 
@@ -14,7 +15,7 @@ public sealed class Player
     private string _guild = string.Empty;
 
     public int Id => _user.Id;
-    public string NickName { get; set; } = "default22";
+    public string NickName { get; set; } = "default";
     public int MaxHp { get; set; } = 3;
     public float Hp { get; set; } = 3.0f;
     public int Gralats { get; set; }
@@ -89,6 +90,11 @@ public sealed class Player
         _user.Send(packet);
     }
 
+    public void SendToLevel(Action<Packet> packet)
+    {
+        _level?.SendToAll(packet);
+    }
+    
     public void SendLink(Link link)
     {
         Send(packet => packet
@@ -296,7 +302,7 @@ public sealed class Player
     [Pure]
     private static bool ShouldForwardToLevel(PlayerProperty property)
     {
-        if (PlayerPropertySet.Local.Contains(property))
+        if (PlayerPropertySet.InitOthers.Contains(property))
         {
             return true;
         }
@@ -365,6 +371,13 @@ public sealed class Player
             nickName += " (" + _guild + ")";
         }
 
+        if (nickName != NickName)
+        {
+            Log.Information(
+                "{AccountName} changed nickname from {OldNickName} to {NewNickName}",
+                AccountName, NickName, nickName);
+        }
+        
         NickName = nickName;
     }
 
@@ -651,7 +664,7 @@ public sealed class Player
                 }
                 else
                 {
-                    SetHead(packet.ReadNStr());
+                    SetHead(packet.ReadStr(len - 100));
                 }
 
                 break;
@@ -816,11 +829,11 @@ public sealed class Player
             // Simplifies login.
             // Manually send prop if you are leaving the level.
             // 1 = join level, 0 = leave level.
-            case PlayerProperty.PLPROP_JOINLEAVELVL:
+            case PlayerProperty.InLevel:
                 packet.ReadGChar();
                 break;
 
-            case PlayerProperty.PLPROP_PCONNECTED:
+            case PlayerProperty.Disconnected:
                 break;
 
             case PlayerProperty.Language:
@@ -1096,11 +1109,11 @@ public sealed class Player
             // Simplifies login.
             // Manually send prop if you are leaving the level.
             // 1 = join level, 0 = leave level.
-            case PlayerProperty.PLPROP_JOINLEAVELVL:
+            case PlayerProperty.InLevel:
                 packet.WriteGChar(1);
                 break;
 
-            case PlayerProperty.PLPROP_PCONNECTED:
+            case PlayerProperty.Disconnected:
                 break;
 
             case PlayerProperty.Language:
