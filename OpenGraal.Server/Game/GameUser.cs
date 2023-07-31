@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using OpenGraal.Net;
 using OpenGraal.Server.Game.Players;
 using OpenGraal.Server.Game.Worlds;
@@ -23,10 +24,26 @@ public sealed class GameUser : User, IDisposable
         _world = world;
     }
 
+    [MemberNotNullWhen(true, nameof(Player))]
+    private bool IsAuthorized(bool disconnectIfNotAuthorized = true)
+    {
+        if (Player is not null)
+        {
+            return true;
+        }
+
+        if (disconnectIfNotAuthorized)
+        {
+            Disconnect("You are not authorized to perform this operation.");
+        }
+
+        return false;
+    }
+
     public void Disconnect(string message)
     {
         Send(packet => packet
-            .WriteGChar(16)
+            .WriteGChar(PacketId.Disconnect)
             .WriteStr(message));
 
         Disconnect();
@@ -35,21 +52,98 @@ public sealed class GameUser : User, IDisposable
     private void SendSignature()
     {
         Send(packet => packet
-            .WriteGChar(25)
+            .WriteGChar(PacketId.Signature)
             .WriteGChar(73));
     }
 
     public void SendFile(string fileName)
     {
-        Send(packet => packet
-            .WriteGChar(30)
-            .WriteStr(fileName));
+        if (!IsAuthorized())
+        {
+            return;
+        }
+        
+        var file = _world.FileManager.GetFile(fileName);
+        if (file is null)
+        {
+            Send(packet => packet
+                .WriteGChar(30)
+                .WriteStr(fileName));
+
+            return;
+        }
+
+        var fileData = File.ReadAllBytes(file.Path);
+        if (fileData.Length == 0)
+        {
+            Send(packet => packet
+                .WriteGChar(30)
+                .WriteStr(fileName));
+
+            return;
+        }
+        
+        _logger.LogInformation("Sending {FileName} to {NickName} ({AccountName})",
+            fileName, 
+            Player.NickName, 
+            Player.AccountName);
+
+        if (fileData.Length > 3145728)
+        {
+            _logger.LogWarning(
+                "Sending large file {FileName} (over 3MB)",
+                fileName);
+        }
+
+        var largeFile = fileData.Length > 32000;
+
+        if (largeFile)
+        {
+            Send(packet => packet
+                .WriteGChar(PacketId.LargeFileStart)
+                .WriteStr(fileName));
+
+            Send(packet => packet
+                .WriteGChar(PacketId.LargeFileSize)
+                .WriteGInt5(fileData.Length));
+        }
+
+        var chunkSize = Math.Min(fileData.Length, 32000);
+        var chunkHeaderSize = 1 + 5 + 1 + fileName.Length + 1;
+
+        var bytesSent = 0;
+
+        while (bytesSent < fileData.Length)
+        {
+            var count = Math.Min(fileData.Length - bytesSent, chunkSize);
+
+            Send(packet => packet
+                .WriteGChar(PacketId.RawData)
+                .WriteGInt(chunkHeaderSize + count));
+
+            var index = bytesSent;
+
+            Send(packet => packet
+                .WriteGChar(PacketId.File)
+                .WriteGInt5(file.LastModified.ToUnixTimeSeconds())
+                .WriteNStr(fileName)
+                .WriteBytes(fileData, index, count));
+
+            bytesSent += count;
+        }
+
+        if (largeFile)
+        {
+            Send(packet => packet
+                .WriteGChar(PacketId.LargeFileEnd)
+                .WriteStr(fileName));
+        }
     }
 
     public void SendStartMessage(string message)
     {
         Send(packet => packet
-            .WriteGChar(41)
+            .WriteGChar(PacketId.StartMessage)
             .WriteStr(message));
     }
 
@@ -61,14 +155,18 @@ public sealed class GameUser : User, IDisposable
             .Split(',').Select(s => '"' + s + '"'));
 
         Send(packet => packet
-            .WriteGChar(47)
+            .WriteGChar(PacketId.StaffGuilds)
             .WriteStr(str));
     }
 
-    public void SendRpgMessage(string message)
+    public void SendRpgMessages(params string[] messages)
     {
+        var message = string.Join(',', messages
+            .Select(message =>
+                '"' + message + '"'));
+
         Send(packet => packet
-            .WriteGChar(179)
+            .WriteGChar(PacketId.RpgWindow)
             .WriteStr(message));
     }
 
@@ -109,7 +207,7 @@ public sealed class GameUser : User, IDisposable
 
             return;
         }
-        
+
         SendStaffGuilds();
         SendStatuses();
 
@@ -121,49 +219,62 @@ public sealed class GameUser : User, IDisposable
         Send(packet => packet.WriteGChar(190));
 
         var level = _world.GetLevel("onlinestartlocal.nw");
+        if (level is null)
+        {
+            Disconnect("No starting level available on server");
+
+            return;
+        }
 
         Player.Warp(level, Player.X, Player.Y);
 
         // TODO: Send bigmap if it was set
         // TODO: Send the minimap if it was set...
 
-        SendRpgMessage(
-            "\"Welcome to OpenGraal!\"," +
-            "\"OpenGraal Server programmed by Guthius.\"");
+        SendRpgMessages(
+            "Welcome to OpenGraal!",
+            "OpenGraal Server programmed by Guthius.");
 
         SendStartMessage("Hello World");
 
         Send(packet => packet.WriteGChar(82)); // Enable Server Text
-
-        //var others = _world.GetPlayers();
-        
-        // foreach (var other in others)
-        // {
-        //     if (other == Player)
-        //     {
-        //         continue;
-        //     }
-        //     
-        //     other.SendPropertiesTo(Player, 
-        //         PlayerPropertySet.Login);
-        //     
-        //     Player.SendPropertiesTo(other, 
-        //         PlayerPropertySet.Login);
-        // }
     }
-    
+
+    public void Warp(float x, float y, string levelName, DateTimeOffset? lastModified = null)
+    {
+        if (!IsAuthorized())
+        {
+            return;
+        }
+
+        var level = _world.GetLevel(levelName);
+        if (level is null)
+        {
+            Player.WarpFailed(levelName);
+
+            return;
+        }
+
+        Player.Warp(level, x, y, lastModified);
+    }
+
     public void SetPlayerProperties(Packet properties)
     {
-        Player?.SetProperties(properties);
+        if (!IsAuthorized())
+        {
+            return;
+        }
+
+        Player.SetProperties(properties);
     }
 
     public void ReportPlayerKiller(int killerId)
     {
-        if (Player is null)
+        if (!IsAuthorized())
         {
             return;
         }
-        
+
         var killer = _world.GetPlayer(killerId);
         if (killer is null)
         {
@@ -171,10 +282,13 @@ public sealed class GameUser : User, IDisposable
         }
 
         _logger.LogInformation(
-            "{AccountName} was killed by {Killer}",
-            Player.AccountName, killer.AccountName);
+            "{Victim} ({VictimAccountName}) was killed by {Killer} ({KillerAccountName})",
+            Player.NickName,
+            Player.AccountName,
+            killer.NickName,
+            killer.AccountName);
     }
-    
+
     public void ShowImage(string fileName)
     {
         Player?.SendToLevel(packet => packet
@@ -183,22 +297,25 @@ public sealed class GameUser : User, IDisposable
             .WriteStr(fileName));
     }
 
-    public void UpdateFile(string fileName, long lastModified)
+    public void UpdateFile(string fileName, DateTimeOffset lastModified)
     {
-        if (Player is null)
+        if (!IsAuthorized())
         {
-            Disconnect("You are not authorized to perform this operation.");
-
             return;
         }
-        
-        var dateTime = DateTimeOffset.FromUnixTimeSeconds(lastModified);
 
-        _logger.LogDebug(
-            "{AccountName} update file {FileName} (Last Modified: {LastModified})",
-            Player.AccountName, fileName, dateTime.ToString("u"));
+        var file = _world.FileManager.GetFile(fileName);
+        if (file is null)
+        {
+            return;
+        }
+
+        if (file.LastModified > lastModified)
+        {
+            // TODO: Send the updated file
+        }
     }
-    
+
     public void SetLanguage(string language)
     {
         if (Player is null)
@@ -232,7 +349,7 @@ public sealed class GameUser : User, IDisposable
             .WriteGChar((byte) (y * 2))
             .WriteStr(actionName));
     }
-    
+
     public void Dispose()
     {
         if (Player is not null)

@@ -73,6 +73,19 @@ public sealed record Packet
         return this;
     }
     
+    public Packet WriteBytes(byte[] bytes, int index, int count)
+    {
+        ThrowIfNotEnoughSpace(count);
+
+        var span = bytes.AsSpan(index, count);
+        
+        span.CopyTo(_bytes.AsSpan(_write, _end - _write));
+        
+        _write += bytes.Length;
+
+        return this;
+    }
+    
     public Packet WriteRaw<T>(ReadOnlySpan<T> data) where T : struct
     {
         var bytes = MemoryMarshal.AsBytes(data);

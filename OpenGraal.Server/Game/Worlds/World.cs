@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenGraal.Data;
 using OpenGraal.Net;
+using OpenGraal.Server.Game.Files;
 using OpenGraal.Server.Game.Players;
 
 namespace OpenGraal.Server.Game.Worlds;
@@ -15,6 +16,8 @@ public sealed class World : BackgroundService
     private readonly ILogger<World> _logger;
     private readonly WorldOptions _options = new();
     private readonly List<Player> _players = new();
+    
+    public FileManager FileManager { get; }
 
     public World(ILogger<World> logger, IConfiguration configuration)
     {
@@ -26,6 +29,24 @@ public sealed class World : BackgroundService
         {
             _options.TickRate = MinTickRate;
         }
+
+        FileManager = new FileManager(Path.Combine(Environment.CurrentDirectory, "World"));
+        FileManager.AddFolder(FileCategory.Body, "bodies/*.png");
+        FileManager.AddFolder(FileCategory.Head, "heads/*");
+        FileManager.AddFolder(FileCategory.Sword, "swords/*");
+        FileManager.AddFolder(FileCategory.Shield, "shields/*");
+        FileManager.AddFolder(FileCategory.Level, "*.graal");
+        FileManager.AddFolder(FileCategory.Level, "*.nw");
+        FileManager.AddFolder(FileCategory.Level | FileCategory.File, "*.gmap");
+        FileManager.AddFolder(FileCategory.File, "*.png");
+        FileManager.AddFolder(FileCategory.File, "*.mng");
+        FileManager.AddFolder(FileCategory.File, "*.gif");
+        FileManager.AddFolder(FileCategory.File, "*.gani");
+        FileManager.AddFolder(FileCategory.File, "*.wav");
+        FileManager.AddFolder(FileCategory.File, "*.txt");
+        FileManager.AddFolder(FileCategory.File, "images/*.png");
+        FileManager.AddFolder(FileCategory.File, "images/*.gif");
+        FileManager.AddFolder(FileCategory.File, "images/*.mng");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -151,7 +172,7 @@ public sealed class World : BackgroundService
 
     private readonly Dictionary<string, WorldLevel> _levels = new();
 
-    public WorldLevel GetLevel(string levelName)
+    public WorldLevel? GetLevel(string levelName)
     {
         levelName = levelName.ToLowerInvariant();
 
@@ -166,13 +187,26 @@ public sealed class World : BackgroundService
         return LoadLevel(levelName);
     }
 
-    private WorldLevel LoadLevel(string levelName)
+    private WorldLevel? LoadLevel(string levelName)
     {
-        var level = Level.LoadNw(levelName);
-
+        var file = FileManager.GetFile(levelName, FileCategory.Level);
+        if (file is null)
+        {
+            _logger.LogWarning(
+                "Level {LevelName} could not be found",
+                levelName);
+            
+            return null;
+        }
+        
+        var level = Level.LoadNw(file.Path);
         if (level is null)
         {
-            throw new Exception($"Could not load level {levelName}");
+            _logger.LogWarning(
+                "Could not load level {LevelName}",
+                levelName);
+            
+            return null;
         }
 
         var serverLevel = new WorldLevel(this, level, levelName);

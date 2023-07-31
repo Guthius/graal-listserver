@@ -7,10 +7,12 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
 {
     public GameCommandParser()
     {
+        Bind<Warp>(0, Warp);
         Bind<SetPlayerProperties>(2, SetPlayerProperties);
         Bind<ReportPlayerKiller>(14, ReportPlayerKiller);
         Bind<GetFile>(23, GetFile);
         Bind<ShowImage>(24, ShowImage);
+        Bind<WarpIfModified>(30, WarpIfModified);
         Bind<UpdateFile>(34, UpdateFile);
         Bind<SetLanguage>(37, SetLanguage);
         Bind<TriggerAction>(38, TriggerAction);
@@ -66,6 +68,14 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
             command.ClientVersion);
     }
 
+    private static void Warp(GameUser user, Warp command)
+    {
+        user.Warp(
+            command.X, 
+            command.Y, 
+            command.LevelName);
+    }
+    
     private static void SetPlayerProperties(GameUser user, SetPlayerProperties command)
     {
         user.SetPlayerProperties(command.Properties);
@@ -84,6 +94,15 @@ internal sealed class GameCommandParser : CommandParser<GameUser>
     private static void ShowImage(GameUser user, ShowImage command)
     {
         user.ShowImage(command.Data);
+    }
+    
+    private static void WarpIfModified(GameUser user, WarpIfModified command)
+    {
+        user.Warp(
+            command.X, 
+            command.Y, 
+            command.LevelName, 
+            command.LastModified);
     }
     
     private static void UpdateFile(GameUser user, UpdateFile command)

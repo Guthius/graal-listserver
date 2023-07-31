@@ -241,7 +241,7 @@ public sealed class Player
         _level = null;
     }
 
-    public void Warp(WorldLevel level, float x, float y)
+    public void Warp(WorldLevel level, float x, float y, DateTimeOffset? lastModified = null)
     {
         if (level == _level)
         {
@@ -256,6 +256,13 @@ public sealed class Player
         _level.Add(this);
     }
 
+    public void WarpFailed(string levelName)
+    {
+        Send(packet => packet
+            .WriteGChar(15)
+            .WriteStr(levelName));
+    }
+    
     public void WarpTo(float x, float y)
     {
         X = x;
