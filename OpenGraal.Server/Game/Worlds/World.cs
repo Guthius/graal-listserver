@@ -14,20 +14,20 @@ public sealed class World : BackgroundService
     private const int MinTickRate = 10;
 
     private readonly ILogger<World> _logger;
-    private readonly WorldOptions _options = new();
     private readonly List<Player> _players = new();
     
+    public readonly WorldOptions Options = new();
     public FileManager FileManager { get; }
 
     public World(ILogger<World> logger, IConfiguration configuration)
     {
         _logger = logger;
 
-        configuration.GetSection("World").Bind(_options);
+        configuration.GetSection("World").Bind(Options);
 
-        if (_options.TickRate <= MinTickRate)
+        if (Options.TickRate <= MinTickRate)
         {
-            _options.TickRate = MinTickRate;
+            Options.TickRate = MinTickRate;
         }
 
         FileManager = new FileManager(Path.Combine(Environment.CurrentDirectory, "World"));
@@ -51,11 +51,11 @@ public sealed class World : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var millisecondsPerTick = 1000 / _options.TickRate;
+        var millisecondsPerTick = 1000 / Options.TickRate;
 
         _logger.LogInformation(
             "World simulation started with a tick rate of {TickRate}",
-            _options.TickRate);
+            Options.TickRate);
 
         var stopWatch = new Stopwatch();
 

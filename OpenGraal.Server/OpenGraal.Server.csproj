@@ -33,11 +33,18 @@
 	  <None Update="Data\Accounts\admin2.json">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	  <None Update="World\onlinestartlocal.nw">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="World\servermessage.html">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\OpenGraal.Net\OpenGraal.Net.csproj" />
 	  <ProjectReference Include="..\src\OpenGraal.Data\OpenGraal.Data.csproj" />
+
 
 
 

@@ -13,7 +13,7 @@ public sealed record Level(
     private const string Base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     private const int BoardSize = 64 * 64;
     
-    public static Level? LoadNw(string path)
+    public static Level LoadNw(string path)
     {
         var lines = File.ReadAllLines(path);
 
@@ -37,176 +37,180 @@ public sealed record Level(
                 continue;
             }
 
-            if (tokens[0] == "BOARD")
+            switch (tokens[0])
             {
-                if (tokens.Length < 6)
-                {
+                case "BOARD" when tokens.Length < 6:
                     Log.Warning("Invalid board data in {FileName} on line {LineNumber}", path, i + 1);
-                    
                     continue;
-                }
-
-                if (!int.TryParse(tokens[1], out var boardX) ||
-                    !int.TryParse(tokens[2], out var boardY) ||
-                    !int.TryParse(tokens[3], out var boardWidth) ||
-                    !int.TryParse(tokens[4], out var boardLayer) ||
-                    tokens[5].Length < boardWidth * 2)
-                {
-                    Log.Warning("Invalid board data in {FileName} on line {LineNumber}", path, i + 1);
-                    
-                    continue;
-                }
-
-                if (boardLayer > 0 && !layerWarningLogged)
-                {
-                    Log.Warning(
-                        "Level {FileName} contains multiple layers. " +
-                        "Layers are not supported at this time, only layer 0 has been loaded", 
-                        path);
-                    
-                    layerWarningLogged = true;
-                }
                 
-                for (var j = boardX; j < (boardX + boardWidth); ++j)
+                case "BOARD":
                 {
-                    var pos = (j - boardX) * 2;
-
-                    var c1 = Base64.IndexOf(tokens[5][pos]);
-                    var c2 = Base64.IndexOf(tokens[5][pos + 1]);
-
-                    levelBoard[j + boardY*64] = (short)((c1 << 6) + c2);
-                }
-            }
-            else if (tokens[0] == "CHEST")
-            {
-                if (tokens.Length < 5 ||
-                    !int.TryParse(tokens[1], out var chestX) ||
-                    !int.TryParse(tokens[2], out var chestY) ||
-                    !int.TryParse(tokens[4], out var chestSignIndex))
-                {
-                    Log.Warning("Invalid chest in {FileName} on line {LineNumber}", path, i + 1);
-                    
-                    continue;
-                }
-
-                var chestItem = Item.GetIndexByName(tokens[3]);
-                if (chestItem == Item.Invalid)
-                {
-                    Log.Warning("Invalid item {ItemName} in chest in {FileName} on line {LineNumber}", 
-                        tokens[3], path, i + 1);
-                    
-                    continue;
-                }
-                
-                levelChests.Add(new Chest(chestX, chestY, chestItem, chestSignIndex));
-            }
-            else if (tokens[0] == "LINK")
-            {
-                if (tokens.Length < 7)
-                {
-                    Log.Warning("Invalid link in {FileName} on line {LineNumber}", path, i + 1);
-                    
-                    continue;
-                }
-                
-                var linkLevel = tokens[1];
-                
-                var offset = 1;
-                for (; offset < tokens.Length - 7; ++offset)
-                {
-                    linkLevel += " " + tokens[offset + 1];
-                }
-
-                if (!int.TryParse(tokens[offset + 1], out var linkX) ||
-                    !int.TryParse(tokens[offset + 2], out var linkY) ||
-                    !int.TryParse(tokens[offset + 3], out var linkWidth) ||
-                    !int.TryParse(tokens[offset + 4], out var linkHeight))
-                {
-                    Log.Warning("Invalid link in {FileName} on line {LineNumber}", path, i + 1);
-                    
-                    continue;
-                }
-                
-                levelLinks.Add(new Link(
-                    linkLevel, 
-                    linkX, 
-                    linkY, 
-                    linkWidth, 
-                    linkHeight, 
-                    tokens[offset + 5], 
-                    tokens[offset + 6]));
-            }
-            else if (tokens[0] == "BADDY")
-            {
-                // TODO: Implement baddy load logic...
-            }
-            else if (tokens[0] == "SIGN")
-            {
-                if (tokens.Length < 3 || 
-                    !int.TryParse(tokens[1], out var signX) ||
-                    !int.TryParse(tokens[2], out var signY))
-                {
-                    Log.Warning("Invalid sign in {FileName} on line {LineNumber}", path, i + 1);
-                    
-                    continue;
-                }
-
-                var signText = string.Empty;
-
-                while (++i < lines.Length)
-                {
-                    if (lines[i] == "SIGNEND")
+                    if (!int.TryParse(tokens[1], out var boardX) ||
+                        !int.TryParse(tokens[2], out var boardY) ||
+                        !int.TryParse(tokens[3], out var boardWidth) ||
+                        !int.TryParse(tokens[4], out var boardLayer) ||
+                        tokens[5].Length < boardWidth * 2)
                     {
-                        break;
+                        Log.Warning("Invalid board data in {FileName} on line {LineNumber}", path, i + 1);
+                    
+                        continue;
                     }
 
-                    signText += lines[i] += "\n";
-                }
-
-                levelSigns.Add(new Sign(signX, signY, signText));
-            }
-            else if (tokens[0] == "NPC")
-            {
-                if (tokens.Length < 4)
-                {
-                    Log.Warning("Invalid NPC in {FileName} on line {LineNumber}", path, i + 1);
-                    
-                    continue;
-                }
-
-                var npcImage = tokens[1];
-
-                var offset = 1;
-                for (; offset < tokens.Length - 3; ++offset)
-                {
-                    npcImage += tokens[offset + 1];
-                }
-
-                if (!double.TryParse(tokens[offset + 1], out var npcX) ||
-                    !double.TryParse(tokens[offset + 2], out var npcY))
-                {
-                    Log.Warning("Invalid NPC in {FileName} on line {LineNumber}", path, i + 1);
-                    
-                    continue;
-                }
-
-                var npcScript = string.Empty;
-                
-                while (++i < lines.Length)
-                {
-                    if (lines[i] == "NPCEND")
+                    if (boardLayer > 0 && !layerWarningLogged)
                     {
-                        break;
+                        Log.Warning(
+                            "Level {FileName} contains multiple layers. " +
+                            "Layers are not supported at this time, only layer 0 has been loaded", 
+                            path);
+                    
+                        layerWarningLogged = true;
+                    }
+                
+                    for (var j = boardX; j < (boardX + boardWidth); ++j)
+                    {
+                        var pos = (j - boardX) * 2;
+
+                        var c1 = Base64.IndexOf(tokens[5][pos]);
+                        var c2 = Base64.IndexOf(tokens[5][pos + 1]);
+
+                        levelBoard[j + boardY*64] = (short)((c1 << 6) + c2);
                     }
 
-                    npcScript += lines[i] + "\n";
+                    break;
                 }
+                
+                case "CHEST":
+                {
+                    if (tokens.Length < 5 ||
+                        !int.TryParse(tokens[1], out var chestX) ||
+                        !int.TryParse(tokens[2], out var chestY) ||
+                        !int.TryParse(tokens[4], out var chestSignIndex))
+                    {
+                        Log.Warning("Invalid chest in {FileName} on line {LineNumber}", path, i + 1);
+                    
+                        continue;
+                    }
 
-                levelNpcs.Add(new Npc(
-                    npcX, 
-                    npcY, 
-                    npcImage,
-                    npcScript));
+                    var chestItem = Item.GetIndex(tokens[3]);
+                    if (chestItem == Item.Invalid)
+                    {
+                        Log.Warning("Invalid item {ItemName} in chest in {FileName} on line {LineNumber}", 
+                            tokens[3], path, i + 1);
+                    
+                        continue;
+                    }
+                
+                    levelChests.Add(new Chest(chestX, chestY, chestItem, chestSignIndex));
+                    break;
+                }
+                
+                case "LINK" when tokens.Length < 7:
+                    Log.Warning("Invalid link in {FileName} on line {LineNumber}", path, i + 1);
+                    continue;
+                
+                case "LINK":
+                {
+                    var linkLevel = tokens[1];
+                
+                    var offset = 1;
+                    for (; offset < tokens.Length - 7; ++offset)
+                    {
+                        linkLevel += " " + tokens[offset + 1];
+                    }
+
+                    if (!int.TryParse(tokens[offset + 1], out var linkX) ||
+                        !int.TryParse(tokens[offset + 2], out var linkY) ||
+                        !int.TryParse(tokens[offset + 3], out var linkWidth) ||
+                        !int.TryParse(tokens[offset + 4], out var linkHeight))
+                    {
+                        Log.Warning("Invalid link in {FileName} on line {LineNumber}", path, i + 1);
+                    
+                        continue;
+                    }
+                
+                    levelLinks.Add(new Link(
+                        linkLevel, 
+                        linkX, 
+                        linkY, 
+                        linkWidth, 
+                        linkHeight, 
+                        tokens[offset + 5], 
+                        tokens[offset + 6]));
+                    break;
+                }
+                
+                case "BADDY":
+                    // TODO: Implement baddy load logic...
+                    break;
+                
+                case "SIGN":
+                {
+                    if (tokens.Length < 3 || 
+                        !int.TryParse(tokens[1], out var signX) ||
+                        !int.TryParse(tokens[2], out var signY))
+                    {
+                        Log.Warning("Invalid sign in {FileName} on line {LineNumber}", path, i + 1);
+                    
+                        continue;
+                    }
+
+                    var signText = string.Empty;
+
+                    while (++i < lines.Length)
+                    {
+                        if (lines[i] == "SIGNEND")
+                        {
+                            break;
+                        }
+
+                        signText += lines[i] += "\n";
+                    }
+
+                    levelSigns.Add(new Sign(signX, signY, signText));
+                    break;
+                }
+                
+                case "NPC" when tokens.Length < 4:
+                    Log.Warning("Invalid NPC in {FileName} on line {LineNumber}", path, i + 1);
+                    continue;
+                
+                case "NPC":
+                {
+                    var npcImage = tokens[1];
+
+                    var offset = 1;
+                    for (; offset < tokens.Length - 3; ++offset)
+                    {
+                        npcImage += tokens[offset + 1];
+                    }
+
+                    if (!double.TryParse(tokens[offset + 1], out var npcX) ||
+                        !double.TryParse(tokens[offset + 2], out var npcY))
+                    {
+                        Log.Warning("Invalid NPC in {FileName} on line {LineNumber}", path, i + 1);
+                    
+                        continue;
+                    }
+
+                    var npcScript = string.Empty;
+                
+                    while (++i < lines.Length)
+                    {
+                        if (lines[i] == "NPCEND")
+                        {
+                            break;
+                        }
+
+                        npcScript += lines[i] + "\n";
+                    }
+
+                    levelNpcs.Add(new Npc(
+                        npcX, 
+                        npcY, 
+                        npcImage,
+                        npcScript));
+                    break;
+                }
             }
         }
 

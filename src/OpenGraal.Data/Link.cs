@@ -58,6 +58,6 @@ public sealed record Link(
 
     public override string ToString()
     {
-        return $"{FileName} {X} {Y} {Width} {Height} {NewY} {NewY}";
+        return $"{FileName} {X} {Y} {Width} {Height} {NewX} {NewY}";
     }
 }

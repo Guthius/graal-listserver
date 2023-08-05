@@ -13,6 +13,7 @@ public sealed class WorldLevel
     private readonly List<Player> _players = new();
 
     public World World { get; }
+    public bool IsSparringZone { get; set; }
 
     public WorldLevel(World world, Level level, string levelName)
     {
@@ -124,6 +125,35 @@ public sealed class WorldLevel
             .WriteGChar(0));
     }
 
+    public Player? GetPlayer(int index)
+    {
+        lock (_players)
+        {
+            if (index < 0 || index >= _players.Count)
+            {
+                return null;
+            }
+
+            return _players[index];
+        }
+    }
+
+    public bool TrySwapPlayers(int index1, int index2)
+    {
+        lock (_players)
+        {
+            if (index1 < 0 || index1 >= _players.Count ||
+                index2 < 0 || index2 >= _players.Count)
+            {
+                return false;
+            }
+
+            (_players[index1], _players[index2]) = (_players[index2], _players[index1]);
+        }
+
+        return true;
+    }
+    
     public void SendTo(Action<Packet> packet, Func<Player, bool> predicate)
     {
         lock (_players)

@@ -9,6 +9,14 @@ namespace OpenGraal.Server.Game.Players;
 
 public sealed class Player
 {
+    private const int MaxGralats = 9999999;
+    private const int MaxBombs = 99;
+    private const int MaxArrows = 99;
+    private const int MaxHearts = 20;
+    private const int MaxSwordPower = 4;
+    private const int MaxShieldPower = 3;
+    private const int MaxGlovePower = 2;
+
     private readonly World _world;
     private readonly GameUser _user;
     private WorldLevel? _level;
@@ -94,7 +102,7 @@ public sealed class Player
     {
         _level?.SendToAll(packet);
     }
-    
+
     public void SendLink(Link link)
     {
         Send(packet => packet
@@ -150,7 +158,7 @@ public sealed class Player
                 .WriteGShort(Id)
                 .Write(GetProperties(properties)),
             player => player != this);
-        
+
         Send(packet => packet
             .WriteGChar(PacketId.PlayerProperties)
             .Write(GetProperties(properties)));
@@ -262,7 +270,7 @@ public sealed class Player
             .WriteGChar(15)
             .WriteStr(levelName));
     }
-    
+
     public void WarpTo(float x, float y)
     {
         X = x;
@@ -384,7 +392,7 @@ public sealed class Player
                 "{AccountName} changed nickname from {OldNickName} to {NewNickName}",
                 AccountName, NickName, nickName);
         }
-        
+
         NickName = nickName;
     }
 
@@ -392,7 +400,7 @@ public sealed class Player
     {
         // TODO: Clip to: settings->getInt("heartlimit", 3));
 
-        maxHp = Math.Min(20, maxHp);
+        maxHp = Math.Min(MaxHearts, maxHp);
 
         MaxHp = maxHp;
     }
@@ -409,23 +417,19 @@ public sealed class Player
 
     private void SetGralats(int gralats)
     {
-        Gralats = Math.Min(gralats, 9999999);
+        Gralats = Math.Min(MaxGralats, gralats);
     }
 
     private void SetSword(int swordPower, string swordImage)
     {
-        SwordPower = swordPower;
+        SwordPower = Math.Min(MaxSwordPower, swordPower);
         SwordImage = swordImage;
-
-        // TODO: clip(sp, ((settings->getBool("healswords", false) == true) ? -(settings->getInt("swordlimit", 3)) : 0), settings->getInt("swordlimit", 3));
     }
 
     private void SetShield(int shieldPower, string shieldImage)
     {
-        ShieldPower = shieldPower;
+        ShieldPower = Math.Min(MaxShieldPower, shieldPower);
         ShieldImage = shieldImage;
-
-        // TODO: clip(sp, 0, settings->getInt("shieldlimit", 3));
     }
 
     private void SetGani(string gani)
@@ -539,50 +543,52 @@ public sealed class Player
 
         Status = status;
 
+        if (_level is null)
+        {
+            return;
+        }
+
         var wasDead = oldStatus.HasFlag(PlayerStatus.Dead);
         var isDead = status.HasFlag(PlayerStatus.Dead);
 
-        /* Did the player come back to life? */
-        if (wasDead && !isDead)
+        switch (wasDead)
         {
-            Hp = Ap switch
+            // Did the player come back to life?
+            case true when !isDead:
+                Hp = Ap switch
+                {
+                    < 20 => 3,
+                    < 50 => 5,
+                    _ => MaxHp
+                };
+
+                Hp = Math.Max(0.5f, Math.Min(Hp, MaxHp));
+
+                if (_level.GetPlayer(0) == this)
+                {
+                    SendIsLeader();
+                }
+                break;
+            
+            // Did the player die?
+            case false when isDead:
             {
-                < 20 => 3,
-                < 50 => 5,
-                _ => MaxHp
-            };
+                if (_level.IsSparringZone == false)
+                {
+                    Deaths++;
+                
+                    // TODO: dropItemsOnDeath();
+                }
+            
+                // If we are the leader and there are more players on the level, we want to remove
+                // ourself from the leader position and tell the new leader that they are the leader.
+                if (_level.GetPlayer(0) == this && _level.TrySwapPlayers(0, 1))
+                {
+                    _level.GetPlayer(0)?.SendIsLeader();
+                }
 
-            Hp = Math.Min(Hp, MaxHp);
-
-            /* TODO:
-                    power = clip((ap < 20 ? 3 : (ap < 40 ? 5 : maxPower)), 0.5f, maxPower);
-                    selfBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
-                    levelBuff >> (char)PLPROP_CURPOWER >> (char)(power * 2.0f);
-
-                    if (level != 0 && level->getPlayer(0) == this)
-                        sendPacket(CString() >> (char)PLO_ISLEADER);
-             */
-        }
-
-        /* Did the player die? */
-        if (!wasDead && isDead)
-        {
-            /* TODO:
-                    if (level->isSparringZone() == false)
-                    {
-                        deaths++;
-                        dropItemsOnDeath();
-                    }
-
-                    // If we are the leader and there are more players on the level, we want to remove
-                    // ourself from the leader position and tell the new leader that they are the leader.
-                    if (level->getPlayer(0) == this && level->getPlayer(1) != 0)
-                    {
-                        level->removePlayer(this);
-                        level->addPlayer(this);
-                        level->getPlayer(0)->sendPacket(CString() >> (char)PLO_ISLEADER);
-                    }
-             */
+                break;
+            }
         }
     }
 
@@ -1217,5 +1223,227 @@ public sealed class Player
             PlayerProperty.GaniAttribute30 => 29,
             _ => -1
         };
+    }
+
+    public void PickupItem(int itemIndex)
+    {
+        switch (itemIndex)
+        {
+            case Item.Types.GreenRupee:
+                AddGralats(1);
+                break;
+            case Item.Types.BlueRupee:
+                AddGralats(5);
+                break;
+            case Item.Types.RedRupee:
+                AddGralats(30);
+                break;
+
+            case Item.Types.Bombs:
+                AddBombs(5);
+                break;
+
+            case Item.Types.Darts:
+                AddArrows(5);
+                break;
+
+            case Item.Types.Heart:
+                RestoreHealth();
+                break;
+
+            case Item.Types.Glove1:
+                SetGlovePower(1);
+                break;
+
+            case Item.Types.Shield:
+                SetShieldPower(1);
+                break;
+
+            case Item.Types.Sword:
+                SetSwordPower(1);
+                break;
+
+            case Item.Types.FullHeart:
+                IncreaseMaxHealth();
+                break;
+
+            case Item.Types.BattleAxe:
+                SetSwordPower(2);
+                break;
+
+            case Item.Types.GoldenSword:
+                SetSwordPower(4);
+                break;
+
+            case Item.Types.MirrorShield:
+                SetShieldPower(2);
+                break;
+
+            case Item.Types.Glove2:
+                SetGlovePower(2);
+                break;
+
+            case Item.Types.LizardShield:
+                SetShieldPower(3);
+                break;
+
+            case Item.Types.LizardSword:
+                SetSwordPower(3);
+                break;
+
+            case Item.Types.GoldRupee:
+                AddGralats(100);
+                break;
+
+            case Item.Types.Bow:
+            case Item.Types.Bomb:
+            case Item.Types.SuperBomb:
+            case Item.Types.FireBall:
+            case Item.Types.FireBlast:
+            case Item.Types.NukeShot:
+            case Item.Types.JoltBomb:
+                AddDefaultWeapon(itemIndex);
+                break;
+
+            case Item.Types.SpinAttack:
+                EnableSpinAttack();
+                break;
+        }
+
+        return;
+
+        void AddGralats(int amount)
+        {
+            var gralats = Math.Min(MaxGralats, Gralats + amount);
+
+            if (gralats == Gralats)
+            {
+                return;
+            }
+
+            Gralats = gralats;
+
+            SendPropertiesToSelf(PlayerProperty.Gralats);
+        }
+
+        void AddBombs(int amount)
+        {
+            var bombs = Math.Min(MaxBombs, Bombs + amount);
+            if (bombs == Bombs)
+            {
+                return;
+            }
+
+            Bombs = bombs;
+
+            SendPropertiesToSelf(PlayerProperty.Bombs);
+        }
+
+        void AddArrows(int amount)
+        {
+            var arrows = Math.Min(MaxArrows, Arrows + amount);
+
+            if (arrows == Arrows)
+            {
+                return;
+            }
+
+            Arrows = arrows;
+
+            SendPropertiesToSelf(PlayerProperty.Arrows);
+        }
+
+        void RestoreHealth()
+        {
+            var hp = Math.Min(MaxHp, Hp + 1);
+
+            if (hp == Hp)
+            {
+                return;
+            }
+
+            Hp = hp;
+
+            SendPropertiesToSelf(PlayerProperty.Hp);
+        }
+
+        void IncreaseMaxHealth()
+        {
+            var maxHp = Math.Min(MaxHearts, MaxHp + 1);
+
+            if (maxHp == MaxHp)
+            {
+                return;
+            }
+
+            MaxHp = maxHp;
+
+            SendPropertiesToSelf(PlayerProperty.MaxHp);
+        }
+
+        void SetSwordPower(int power)
+        {
+            power = Math.Min(MaxSwordPower, power);
+            if (SwordPower == power)
+            {
+                return;
+            }
+
+            SwordPower = power;
+
+            SendPropertiesToSelf(PlayerProperty.SwordPowerAndImage);
+        }
+
+        void SetShieldPower(int power)
+        {
+            power = Math.Min(MaxShieldPower, power);
+            if (ShieldPower == power)
+            {
+                return;
+            }
+
+            ShieldPower = power;
+
+            SendPropertiesToSelf(PlayerProperty.ShieldPowerAndImage);
+        }
+
+        void SetGlovePower(int power)
+        {
+            power = Math.Min(MaxGlovePower, power);
+            if (GlovePower == power)
+            {
+                return;
+            }
+
+            GlovePower = power;
+
+            SendPropertiesToSelf(PlayerProperty.GlovePower);
+        }
+
+        void EnableSpinAttack()
+        {
+            var status = Status | PlayerStatus.HasSpin;
+
+            if (Status == status)
+            {
+                return;
+            }
+
+            Status = status;
+
+            SendPropertiesToSelf(PlayerProperty.Status);
+        }
+    }
+
+    public void AddDefaultWeapon(int defaultWeapon)
+    {
+        if (!_world.Options.EnableDefaultWeapons)
+        {
+            return;
+        }
+
+        Send(packet => packet
+            .WriteGChar(43) // PLO_DEFAULTWEAPON
+            .WriteGChar(defaultWeapon));
     }
 }

@@ -140,8 +140,16 @@ public sealed class GameUser : User, IDisposable
         }
     }
 
-    public void SendStartMessage(string message)
+    public void SendStartMessage()
     {
+        var path = Path.Combine("World", "servermessage.html");
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        var message = File.ReadAllText(path);
+        
         Send(packet => packet
             .WriteGChar(PacketId.StartMessage)
             .WriteStr(message));
@@ -218,7 +226,7 @@ public sealed class GameUser : User, IDisposable
         Send(packet => packet.WriteGChar(34).WriteStr("Bow")); // Delete Weapon
         Send(packet => packet.WriteGChar(190));
 
-        var level = _world.GetLevel("onlinestartlocal.nw");
+        var level = _world.GetLevel(_world.Options.StartLevel);
         if (level is null)
         {
             Disconnect("No starting level available on server");
@@ -234,8 +242,8 @@ public sealed class GameUser : User, IDisposable
         SendRpgMessages(
             "Welcome to OpenGraal!",
             "OpenGraal Server programmed by Guthius.");
-
-        SendStartMessage("Hello World");
+        
+        SendStartMessage();
 
         Send(packet => packet.WriteGChar(82)); // Enable Server Text
     }
