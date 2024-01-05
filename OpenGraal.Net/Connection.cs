@@ -30,7 +30,7 @@ public sealed class Connection : IConnection
     private readonly byte[] _deflateBuffer;
     private readonly IPacketEncoding _encoding = new ZLibPacketEncoding();
     private bool _disposed;
-    
+
     public int Id { get; }
     public string Address { get; }
 
@@ -38,7 +38,7 @@ public sealed class Connection : IConnection
     {
         Address = socket.RemoteEndPoint?.ToString() ?? string.Empty;
         Id = id;
-        
+
         _events = events;
         _protocol = protocol;
         _socket = socket;
@@ -51,9 +51,9 @@ public sealed class Connection : IConnection
         _flushBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
         _inflateBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
         _deflateBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-        
+
         _events.OnConnected(this);
-        
+
         TryReceive();
     }
 
@@ -134,7 +134,7 @@ public sealed class Connection : IConnection
 
                     _sendBufferStream.Flush(_encoding, _flushBuffer, out _flushLen);
                 }
-                
+
                 if (_flushLen == 0)
                 {
                     _sending = false;
@@ -163,20 +163,20 @@ public sealed class Connection : IConnection
     {
         _protocol.Handle(this, bytes.AsMemory(index, count));
     }
-    
+
     private void ParsePackets(byte[] bytes, int count)
     {
         var p = 0;
-        
+
         for (var i = 0; i < bytes.Length; ++i)
         {
             if (bytes[i] != PacketDelimiter)
             {
                 continue;
             }
-            
+
             ParsePacket(bytes, p, i - p);
-                
+
             p = i + 1;
         }
 
@@ -186,7 +186,7 @@ public sealed class Connection : IConnection
             ParsePacket(bytes, p, c);
         }
     }
-    
+
     private void ProcessPackets(int bytesReceived)
     {
         _receiveBufferOffset += bytesReceived;
@@ -203,7 +203,7 @@ public sealed class Connection : IConnection
         }
 
         ParsePackets(_deflateBuffer, packetLen);
-        
+
         Array.Copy(_receiveBuffer, bytesRead, _receiveBuffer, 0, _receiveBufferOffset - bytesRead);
 
         _receiveBufferOffset -= bytesRead;
@@ -337,7 +337,7 @@ public sealed class Connection : IConnection
         _connected = false;
         _events.OnDisconnected(this);
     }
-    
+
     private void Dispose(bool disposing)
     {
         if (_disposed)

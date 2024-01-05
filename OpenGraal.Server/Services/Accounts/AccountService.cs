@@ -6,7 +6,7 @@ namespace OpenGraal.Server.Services.Accounts;
 internal sealed class AccountService
 {
     private readonly string _path;
-    
+
     public AccountService(IConfiguration configuration)
     {
         _path = configuration["DataPath"] ?? "Data";
@@ -16,14 +16,14 @@ internal sealed class AccountService
                 "No path for the database was specified. " +
                 "Please configure 'DataPath' and restart.");
         }
-        
+
         _path = Path.Combine(_path, "Accounts");
         if (!Directory.Exists(_path))
         {
             Directory.CreateDirectory(_path);
         }
     }
-    
+
     public bool AccountExists(string name, string password)
     {
         var accountPath = Path.Combine(_path, name + ".json");

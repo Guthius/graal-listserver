@@ -9,13 +9,13 @@ internal sealed class LobbyManager
 {
     private readonly ILogger<LobbyManager> _logger;
     private readonly string _dataPath;
-    private readonly List<ServerInfo> _serverInfos = new();
-    
+    private readonly List<ServerInfo> _serverInfos = [];
+
     public LobbyManager(ILogger<LobbyManager> logger, IConfiguration configuration)
     {
         _logger = logger;
         _dataPath = configuration["DataPath"] ?? "Data";
-        
+
         LoadServerList();
     }
 
@@ -27,7 +27,7 @@ internal sealed class LobbyManager
                 "Unable to load server list. " +
                 "Please configure 'DataPath' and restart.");
         }
-        
+
         var path = Path.Combine(_dataPath, "servers.json");
         if (!File.Exists(path))
         {
@@ -41,7 +41,7 @@ internal sealed class LobbyManager
             {
                 return;
             }
-            
+
             var items = JsonSerializer.Deserialize<List<ServerInfo>>(json);
             if (items is not null)
             {
@@ -53,7 +53,7 @@ internal sealed class LobbyManager
             _logger.LogError(ex, "Failed to load server list");
         }
     }
-    
+
     public List<ServerInfo> GetServerList()
     {
         return _serverInfos;

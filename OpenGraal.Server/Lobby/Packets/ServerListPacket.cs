@@ -6,7 +6,7 @@ namespace OpenGraal.Server.Lobby.Packets;
 internal sealed record ServerListPacket(List<ServerInfo> ServerInfos) : IServerPacket
 {
     private const int Id = 0;
-    
+
     public void WriteTo(IPacketOutputStream output)
     {
         output.WriteGChar(Id);
@@ -14,13 +14,12 @@ internal sealed record ServerListPacket(List<ServerInfo> ServerInfos) : IServerP
 
         foreach (var serverInfo in ServerInfos)
         {
-            
             var name = serverInfo.Name;
             if (serverInfo.Premium)
             {
                 name = "P " + name;
             }
-            
+
             output.WriteGChar(8);
             output.WriteNStr(name);
             output.WriteNStr(serverInfo.Language);

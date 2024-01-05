@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace OpenGraal.Net;
 
-public sealed class Service<TProtocol> : BackgroundService, IServiceEvents 
+public sealed class Service<TProtocol> : BackgroundService, IServiceEvents
     where TProtocol : IProtocol
 {
     private readonly ILogger<Service<TProtocol>> _logger;
@@ -23,7 +23,7 @@ public sealed class Service<TProtocol> : BackgroundService, IServiceEvents
         _logger = logger;
         _connectionManager = connectionManager;
         _name = typeof(TProtocol).Name[..^8];
-        
+
         configuration.GetSection(_name).Bind(_options);
     }
 
@@ -31,7 +31,7 @@ public sealed class Service<TProtocol> : BackgroundService, IServiceEvents
     {
         _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
         _socket.Bind(new IPEndPoint(IPAddress.Any, _options.Port));
-        _socket.Listen((int)SocketOptionName.MaxConnections);
+        _socket.Listen((int) SocketOptionName.MaxConnections);
 
         _logger.LogInformation(
             "{Protocol} service started on port {Port}",

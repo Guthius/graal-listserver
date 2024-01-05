@@ -3,7 +3,7 @@
 namespace OpenGraal.Server.Lobby.Dtos;
 
 [UsedImplicitly(ImplicitUseTargetFlags.WithMembers)]
-internal sealed class ServerInfo
+internal sealed record ServerInfo
 {
     public bool Premium { get; set; }
     public string Name { get; set; } = string.Empty;

@@ -3,14 +3,14 @@
 namespace OpenGraal.Server.Lobby.Packets;
 
 internal sealed record LoginPacket(
-        string AccountName,
-        string Password) 
+    string AccountName,
+    string Password)
     : IClientPacket<LoginPacket>
 {
     public static LoginPacket ReadFrom(IPacketInputStream input)
     {
         return new LoginPacket(
-            input.ReadNStr(), 
+            input.ReadNStr(),
             input.ReadNStr());
     }
 }

@@ -3,7 +3,7 @@
 namespace OpenGraal.Server.Lobby.Packets;
 
 internal sealed record IdentifyPacket(
-        string ClientVersion) 
+    string ClientVersion)
     : IClientPacket<IdentifyPacket>
 {
     public static IdentifyPacket ReadFrom(IPacketInputStream input)

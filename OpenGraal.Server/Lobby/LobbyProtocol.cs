@@ -94,7 +94,7 @@ internal sealed class LobbyProtocol : Protocol
         }
 
         var serverList = _lobbyManager.GetServerList();
-        
+
         connection.Send(new ServerListPacket(serverList));
     }
 }

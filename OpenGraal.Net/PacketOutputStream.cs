@@ -1,15 +1,8 @@
 namespace OpenGraal.Net;
 
-public sealed class PacketOutputStream : IPacketOutputStream
+public sealed class PacketOutputStream(byte[] buffer) : IPacketOutputStream
 {
-    private readonly byte[] _buffer;
     private int _pos;
-
-    public PacketOutputStream(byte[] buffer)
-    {
-        _buffer = buffer;
-        _pos = 0;
-    }
 
     public void Flush(IPacketEncoding encoding, byte[] output, out int outputLen)
     {
@@ -20,27 +13,27 @@ public sealed class PacketOutputStream : IPacketOutputStream
             return;
         }
 
-        encoding.Encode(_buffer, 0, _pos, output, out outputLen);
+        encoding.Encode(buffer, 0, _pos, output, out outputLen);
 
         _pos = 0;
     }
 
     public void WriteByte(int value)
     {
-        _buffer[_pos] = (byte)value;
+        buffer[_pos] = (byte) value;
         _pos++;
     }
 
     public void WriteGChar(int value)
     {
-        _buffer[_pos] = (byte)(value + 32);
+        buffer[_pos] = (byte) (value + 32);
         _pos++;
     }
 
     public void WriteStr(string str)
     {
         var len = str.Length;
-        System.Text.Encoding.UTF8.GetBytes(str, 0, len, _buffer, _pos);
+        System.Text.Encoding.UTF8.GetBytes(str, 0, len, buffer, _pos);
         _pos += len;
     }
 
@@ -48,7 +41,7 @@ public sealed class PacketOutputStream : IPacketOutputStream
     {
         // TODO: Truncate string if needed...
 
-        WriteGChar((byte)str.Length);
+        WriteGChar((byte) str.Length);
         WriteStr(str);
     }
 }
