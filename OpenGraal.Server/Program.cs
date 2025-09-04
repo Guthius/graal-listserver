@@ -25,17 +25,18 @@ Log.Information("Starting server...");
 
 try
 {
-    await Host.CreateDefaultBuilder(args)
-        .ConfigureServices((_, services) =>
-        {
-            services.AddSingleton<AccountService>();
-            services.AddSingleton<LobbyManager>();
-            services.AddScoped<LobbyProtocol>();
-            services.AddSingleton(typeof(ConnectionManager<>));
-            services.AddHostedService<Service<LobbyProtocol>>();
-        })
-        .UseSerilog()
-        .RunConsoleAsync();
+    var builder = Host.CreateApplicationBuilder(args);
+
+    builder.Services.AddSingleton<AccountService>();
+    builder.Services.AddSingleton<LobbyManager>();
+    builder.Services.AddScoped<LobbyProtocol>();
+    builder.Services.AddSingleton(typeof(ConnectionManager<>));
+    builder.Services.AddHostedService<Service<LobbyProtocol>>();
+    builder.Services.AddSerilog();
+
+    var host = builder.Build();
+
+    await host.RunAsync();
 }
 catch (Exception ex)
 {

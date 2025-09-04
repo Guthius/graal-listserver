@@ -9,7 +9,7 @@ internal sealed class AccountService
 
     public AccountService(IConfiguration configuration)
     {
-        _path = configuration["DataPath"] ?? "Data";
+        _path = configuration.GetValue<string>("DataPath", "Data");
         if (string.IsNullOrEmpty(_path))
         {
             throw new Exception(
