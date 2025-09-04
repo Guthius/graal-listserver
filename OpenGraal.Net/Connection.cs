@@ -18,7 +18,7 @@ public sealed class Connection : IConnection
     private readonly byte[] _receiveBuffer;
     private int _receiveBufferOffset;
     private bool _receiving;
-    private readonly object _sendLock = new();
+    private readonly Lock _sendLock = new();
     private readonly SocketAsyncEventArgs _sendEvent = new();
     private readonly byte[] _sendBuffer;
     private readonly PacketOutputStream _sendBufferStream;

@@ -14,7 +14,7 @@ internal sealed class LobbyManager
     public LobbyManager(ILogger<LobbyManager> logger, IConfiguration configuration)
     {
         _logger = logger;
-        _dataPath = configuration["DataPath"] ?? "Data";
+        _dataPath = configuration.GetValue("DataPath", "Data");
 
         LoadServerList();
     }
