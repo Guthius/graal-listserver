@@ -10,8 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        runtime: [ 'linux-x64', 'win-x64' ]
-        os: [ 'Linux', 'Windows' ]
+        include:
+          - runtime: linux-x64
+            os: Linux
+          - runtime: win-x64
+            os: Windows
     
     steps:
       - name: Checkout repository
